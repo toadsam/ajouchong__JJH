@@ -5,7 +5,7 @@ import com.ajouchong.service.AgoraService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/agora")
+@RequestMapping("/api/admin/agora")
 public class AgoraAdminController {
     private final AgoraService agoraService;
 
