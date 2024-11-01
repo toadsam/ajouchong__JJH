@@ -20,4 +20,4 @@ jwt:
   secret: ${secret}
   expiration_time: 86400000 #1일
 server:
-  port: 20232
+  port: 8080
