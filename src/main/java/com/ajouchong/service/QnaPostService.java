@@ -1,8 +1,8 @@
 package com.ajouchong.service;
 
 import com.ajouchong.dto.request.AnswerRequestDto;
-import com.ajouchong.dto.response.AnswerResponseDto;
 import com.ajouchong.dto.request.QnaPostRequestDto;
+import com.ajouchong.dto.response.AnswerResponseDto;
 import com.ajouchong.dto.response.QnaPostResponseDto;
 import com.ajouchong.entity.Answer;
 import com.ajouchong.entity.QnaPost;
@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class QnaPostService {
@@ -46,9 +47,13 @@ public class QnaPostService {
     }
 
     @Transactional(readOnly = true)
-    public List<QnaPost> getAllPosts() {
-        return qnaPostRepository.findAll();
+    public List<QnaPostResponseDto> getAllPosts() {
+        List<QnaPost> posts = qnaPostRepository.findAll();
+        return posts.stream()
+                .map(QnaPostResponseDto::new)
+                .collect(Collectors.toList());
     }
+
 
     @Transactional
     public void incrementHitCount(Long postId) {
