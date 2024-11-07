@@ -31,6 +31,9 @@ public class QnaPostResponseDto {
         if (post.getAnswer() != null) {
             this.answer = new AnswerResponseDto(post.getAnswer());
         }
+        else {
+            this.answer = null;
+        }
 
     }
 }
