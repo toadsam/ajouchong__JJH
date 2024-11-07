@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,15 +40,17 @@ public class QnaPostService {
         return new QnaPostResponseDto(post);
     }
 
-    @Transactional(readOnly = true)
-    public Optional<QnaPost> getPostById(Long postId) {
-        return qnaPostRepository.findById(postId);
+
+    @Transactional
+    public QnaPostResponseDto getPostById(Long id) {
+        QnaPost qnaPost = qnaPostRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(id + "번 게시글을 찾을 수 없습니다."));
+        qnaPost.incrementHitCount();
+        return new QnaPostResponseDto(qnaPost);
     }
 
-    @Transactional(readOnly = true)
     public List<QnaPostResponseDto> getAllPosts() {
-        List<QnaPost> posts = qnaPostRepository.findAll();
-        return posts.stream()
+        return qnaPostRepository.findAll().stream()
                 .map(QnaPostResponseDto::new)
                 .collect(Collectors.toList());
     }

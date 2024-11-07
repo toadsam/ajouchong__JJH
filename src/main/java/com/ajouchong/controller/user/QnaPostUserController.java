@@ -3,12 +3,10 @@ package com.ajouchong.controller.user;
 import com.ajouchong.common.ApiResponse;
 import com.ajouchong.dto.request.QnaPostRequestDto;
 import com.ajouchong.dto.response.QnaPostResponseDto;
-import com.ajouchong.entity.QnaPost;
 import com.ajouchong.service.QnaPostService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("api/qna")
@@ -33,14 +31,8 @@ public class QnaPostUserController {
 
     @GetMapping("{postId}")
     public ApiResponse<QnaPostResponseDto> getPostById(@PathVariable Long postId) {
-        Optional<QnaPost> post = qnaPostService.getPostById(postId);
-        if (post.isPresent()) {
-            qnaPostService.incrementHitCount(postId);
-            QnaPostResponseDto postDto = new QnaPostResponseDto(post.get());
-            return new ApiResponse<>(1, postId + "번 게시글 조회 성공", postDto);
-        } else {
-            return new ApiResponse<>(0, "게시글을 찾을 수 없습니다.", null);
-        }
+        QnaPostResponseDto responseDto = qnaPostService.getPostById(postId);
+        return new ApiResponse<>(1, postId +"번 게시글 반환에 성공했습니다.", responseDto);
     }
 
 

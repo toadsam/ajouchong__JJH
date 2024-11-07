@@ -2,13 +2,14 @@ package com.ajouchong.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Getter
-@Setter
+@Getter  @Setter
+@RequiredArgsConstructor
 public class QnaPost {
 
     @Id
@@ -48,8 +49,4 @@ public class QnaPost {
         this.qpUserLikeCnt++;
     }
 
-    public void setAnswer(Answer answer) {
-        this.answer = answer;
-        this.isReplied = true;
-    }
 }
