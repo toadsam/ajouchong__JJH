@@ -16,16 +16,7 @@ public class QnaPostResponseDto {
     private int qpHitCnt;
     private LocalDateTime qpCreateTime;
     private LocalDateTime qpUpdateTime;
-    private AnswerDto answer;
-
-    @Getter
-    @Setter
-    public static class AnswerDto {
-        private Long answerId;
-        private String content;
-        private LocalDateTime createTime;
-        private LocalDateTime updateTime;
-    }
+    private AnswerResponseDto answer;
 
     public QnaPostResponseDto(QnaPost post) {
         this.qPostId = post.getQPostId();
@@ -36,7 +27,10 @@ public class QnaPostResponseDto {
         this.qpHitCnt = post.getQpHitCnt();
         this.qpCreateTime = post.getQpCreateTime();
         this.qpUpdateTime = post.getQpUpdateTime();
-        this.answer = new AnswerDto();
+
+        if (post.getAnswer() != null) {
+            this.answer = new AnswerResponseDto(post.getAnswer());
+        }
 
     }
 }

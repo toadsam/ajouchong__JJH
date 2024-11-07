@@ -26,21 +26,23 @@ public class QnaPostUserController {
     }
 
     @GetMapping
-    public ApiResponse<List<QnaPost>> getAllPosts() {
-        List<QnaPost> allPosts = qnaPostService.getAllPosts();
+    public ApiResponse<List<QnaPostResponseDto>> getAllPosts() {
+        List<QnaPostResponseDto> allPosts = qnaPostService.getAllPosts();
         return new ApiResponse<>(1, "전체 게시글 목록 조회 성공", allPosts);
     }
 
     @GetMapping("{postId}")
-    public ApiResponse<Optional<QnaPost>> getPostById(@PathVariable Long postId) {
+    public ApiResponse<QnaPostResponseDto> getPostById(@PathVariable Long postId) {
         Optional<QnaPost> post = qnaPostService.getPostById(postId);
         if (post.isPresent()) {
             qnaPostService.incrementHitCount(postId);
-            return new ApiResponse<>(1, postId + "번 게시글 조회 성공", post);
+            QnaPostResponseDto postDto = new QnaPostResponseDto(post.get());
+            return new ApiResponse<>(1, postId + "번 게시글 조회 성공", postDto);
         } else {
             return new ApiResponse<>(0, "게시글을 찾을 수 없습니다.", null);
         }
     }
+
 
     @PostMapping("/{postId}/like")
     public ApiResponse<Void> incrementLikeCount(@PathVariable Long postId) {
