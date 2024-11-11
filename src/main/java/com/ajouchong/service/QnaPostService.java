@@ -55,16 +55,6 @@ public class QnaPostService {
                 .collect(Collectors.toList());
     }
 
-
-    @Transactional
-    public void incrementHitCount(Long postId) {
-        QnaPost post = qnaPostRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException(postId + "번 게시글을 찾을 수 없습니다."));
-
-        post.incrementHitCount();
-        qnaPostRepository.save(post);
-    }
-
     @Transactional
     public void incrementUserLikeCount(Long postId) {
         QnaPost post = qnaPostRepository.findById(postId)
@@ -95,7 +85,7 @@ public class QnaPostService {
         } else {
             answer = new Answer();
             answer.setContent(requestDto.getContent());
-            answer.setQnaPost(post);
+//            answer.setQnaPost(post);
             answer.setCreateTime(LocalDateTime.now());
             answer.setUpdateTime(LocalDateTime.now());
             post.setAnswer(answer);
