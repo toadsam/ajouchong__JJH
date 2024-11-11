@@ -85,7 +85,7 @@ public class QnaPostService {
         } else {
             answer = new Answer();
             answer.setContent(requestDto.getContent());
-//            answer.setQnaPost(post);
+            answer.setQnaPost(post);
             answer.setCreateTime(LocalDateTime.now());
             answer.setUpdateTime(LocalDateTime.now());
             post.setAnswer(answer);
