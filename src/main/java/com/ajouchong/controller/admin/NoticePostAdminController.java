@@ -1,27 +1,34 @@
 package com.ajouchong.controller.admin;
 
 import com.ajouchong.common.ApiResponse;
+import com.ajouchong.dto.request.NoticePostAddFormDto;
+import com.ajouchong.dto.request.NoticePostRequestDto;
 import com.ajouchong.dto.response.NoticePostResponseDto;
-import com.ajouchong.dto.request.NoticePostUploadRequestDto;
+import com.ajouchong.jwt.JwtTokenProvider;
 import com.ajouchong.service.NoticePostService;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("api/admin/notice")
 public class NoticePostAdminController {
     private final NoticePostService noticePostService;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public NoticePostAdminController(NoticePostService noticePostService) {
+    public NoticePostAdminController(NoticePostService noticePostService, JwtTokenProvider jwtTokenProvider) {
         this.noticePostService = noticePostService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @PostMapping
     public ApiResponse<NoticePostResponseDto> uploadNoticePost(
-            @RequestBody NoticePostUploadRequestDto dto,
-            @RequestHeader("Authorization") String authorizationHeader) {
+            @ModelAttribute NoticePostAddFormDto requestDto,
+            @RequestHeader("Authorization") String authorizationHeader) throws IOException {
 
         String token = authorizationHeader.substring(7);
-        NoticePostResponseDto savedNoticePost = noticePostService.saveNoticePost(dto, token);
+        NoticePostRequestDto noticePostRequestDto = requestDto.createNoticePostDto(jwtTokenProvider.getUserFromToken(token));
+        NoticePostResponseDto savedNoticePost = noticePostService.saveNoticePost(noticePostRequestDto, token);
 
         return new ApiResponse<>(1, "게시글 업로드 성공", savedNoticePost);
     }

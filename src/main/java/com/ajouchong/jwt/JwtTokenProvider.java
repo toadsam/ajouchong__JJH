@@ -1,5 +1,7 @@
 package com.ajouchong.jwt;
 
+import com.ajouchong.entity.Member;
+import com.ajouchong.repository.MemberRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -16,6 +18,13 @@ import java.util.Map;
 
 @Component
 public class JwtTokenProvider {
+
+    private final MemberRepository memberRepository;
+
+    public JwtTokenProvider(MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
+    }
+
 
     @Value("${jwt.secret}")
     private String jwt_secret;
@@ -52,6 +61,12 @@ public class JwtTokenProvider {
                 .getBody();
 
         return claims.getSubject();
+    }
+
+    public Member getUserFromToken(String token) {
+        String email = getUserEmailFromToken(token);
+        return memberRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
     }
 
     // 토큰 유효성 검사
