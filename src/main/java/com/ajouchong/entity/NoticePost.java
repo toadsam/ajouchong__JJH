@@ -21,7 +21,7 @@ public class NoticePost {
     private String npContent;
 
     @OneToMany(mappedBy = "noticePost", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<NoticePostImage> images = new ArrayList<>();
+    private List<Attachment> attachments = new ArrayList<>();
 
     private int npUserLikeCnt = 0;
     private int npHitCnt = 0;

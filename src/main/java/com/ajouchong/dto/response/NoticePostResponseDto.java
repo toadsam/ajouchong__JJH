@@ -1,16 +1,14 @@
 package com.ajouchong.dto.response;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Builder
 public class NoticePostResponseDto {
     private Long nPost_id;
     private String npTitle;
@@ -19,5 +17,7 @@ public class NoticePostResponseDto {
     private int npHitCnt;
     private LocalDateTime npCreateTime;
     private LocalDateTime npUpdateTime;
-    private List<String> imageUrls;
+    private List<String> imageUrls;     // 이미지 파일 URL
+    private List<String> generalUrls;   // 일반 파일 URL
 }
+
