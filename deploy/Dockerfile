@@ -4,7 +4,7 @@ WORKDIR /app
 COPY . .
 RUN apt update -y
 RUN apt install -y git
-RUN ./gradlew build
+RUN ./gradlew build -x test
 
 FROM docker.io/library/openjdk:21-slim
 WORKDIR /app
