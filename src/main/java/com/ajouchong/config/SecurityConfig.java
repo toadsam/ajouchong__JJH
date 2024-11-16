@@ -1,19 +1,13 @@
 package com.ajouchong.config;
 
-import com.ajouchong.jwt.JwtAuthenticationFilter;
-import com.ajouchong.jwt.JwtTokenProvider;
-import com.ajouchong.service.MemberDetailService;
-import lombok.AllArgsConstructor;
+import com.ajouchong.entity.enumClass.MemberRole;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -23,36 +17,52 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@AllArgsConstructor
 public class SecurityConfig {
 
-    private final MemberDetailService memberDetailService;
-    private final JwtTokenProvider jwtTokenProvider;
-
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    public WebSecurityCustomizer webSecurityCustomizer() { // security를 적용하지 않을 리소스
+        return web -> web.ignoring()
+                // error endpoint를 열어줘야 함, favicon.ico 추가!
+                .requestMatchers("/error", "/favicon.ico");
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(
-                jwtTokenProvider,
-                memberDetailService,
-                authenticationManager(http.getSharedObject(AuthenticationConfiguration.class))
-        );
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
+
+        // 접근 권한 설정
+        http
+                .authorizeHttpRequests((auth) -> auth
+                        .requestMatchers("/oauth-login/admin").hasRole(MemberRole.ADMIN.name())
+                        .requestMatchers("/oauth-login/info").authenticated()
+                        .anyRequest().permitAll()
+                );
+
+        // 폼 로그인 방식 설정
+        http
+                .formLogin((auth) -> auth.loginPage("/oauth-login/login")
+                        .loginProcessingUrl("/oauth-login/loginProc")
+                        .usernameParameter("loginId")
+                        .passwordParameter("password")
+                        .defaultSuccessUrl("/oauth-login")
+                        .failureUrl("/oauth-login")
+                        .permitAll());
+
+        // OAuth 2.0 로그인 방식 설정
+        http
+                .oauth2Login((auth) -> auth.loginPage("/oauth-login/login")
+                        .defaultSuccessUrl("/oauth-login")
+                        .failureUrl("/oauth-login/login")
+                        .permitAll());
+        http
+                .logout((auth) -> auth
+                        .logoutUrl("/oauth-login/logout"));
 
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
-                )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(AbstractHttpConfigurer::disable);
 
         return http.build();
     }
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

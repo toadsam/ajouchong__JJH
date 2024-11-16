@@ -44,3 +44,5 @@ out/
 #img
 ./img
 ./img/**
+
+/src/main/resources/templates/

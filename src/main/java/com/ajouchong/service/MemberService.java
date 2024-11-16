@@ -1,51 +1,64 @@
 package com.ajouchong.service;
 
-import com.ajouchong.dto.request.AddMemberRequestDto;
+import com.ajouchong.dto.request.JoinRequestDto;
+import com.ajouchong.dto.request.LoginRequestDto;
 import com.ajouchong.entity.Member;
-import com.ajouchong.exception.DuplicateEmailException;
 import com.ajouchong.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-@RequiredArgsConstructor
+import java.util.Optional;
+
 @Service
+@Transactional
+@RequiredArgsConstructor
 public class MemberService {
 
     private final MemberRepository memberRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public Member save(AddMemberRequestDto requestDto) {
-        if (memberRepository.existsByEmail(requestDto.getEmail())) {
-            throw new DuplicateEmailException("이미 존재하는 이메일입니다.");
+    public boolean checkLoginIdDuplicate(String loginId){
+        return memberRepository.existsByLoginId(loginId);
+    }
+
+    public void join(JoinRequestDto joinRequest) {
+        memberRepository.save(joinRequest.toEntity());
+    }
+
+    public Member login(LoginRequestDto loginRequest) {
+        // loginId로 회원 검색
+        Optional<Member> findMember = memberRepository.findByLoginId(loginRequest.getLoginId());
+
+        // 회원이 존재하지 않으면 null 반환
+        if (findMember.isEmpty()) {
+            return null;
         }
 
-        Member member = Member.builder()
-                .name(requestDto.getName())
-                .email(requestDto.getEmail())
-                .password(bCryptPasswordEncoder.encode(requestDto.getPassword()))
-                .student_id(requestDto.getStudent_id())
-                .major(requestDto.getMajor())
-                .role(requestDto.getRole())
-                .build();
-
-        return memberRepository.save(member);
-    }
-
-    public void changePassword(Member member, String oldPassword, String newPassword) {
-        if (!bCryptPasswordEncoder.matches(oldPassword, member.getPassword())) {
-            throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+        // 비밀번호가 일치하지 않으면 null 반환
+        Member member = findMember.get();
+        if (!member.getPassword().equals(loginRequest.getPassword())) {
+            return null;
         }
 
-        member.updatePassword(bCryptPasswordEncoder.encode(newPassword));
-        memberRepository.save(member);
+        return member;
     }
 
-    
-    public Member findByEmail(String email) {
-        return memberRepository.findByEmail(email)
-          .orElseThrow(() -> new UsernameNotFoundException("해당 이메일의 사용자를 찾을 수 없습니다."));
+    public Member getLoginMemberById(String memberId) {
+        if (memberId == null) return null;
+
+        Optional<Member> findMember = memberRepository.findByLoginId(memberId);
+        return findMember.orElse(null);
     }
+
+    public void securityJoin(JoinRequestDto joinRequest){
+        if(memberRepository.existsByLoginId(joinRequest.getLoginId())){
+            return;
+        }
+
+        joinRequest.setPassword(bCryptPasswordEncoder.encode(joinRequest.getPassword()));
+        memberRepository.save(joinRequest.toEntity());
+    }
+
 }
