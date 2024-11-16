@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: ajouchong
+  profiles:
+    active: prod
+  jpa:
+    show-sql: true
+    database: postgresql
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        show_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  sql:
+    init:
+      mode: always
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${CLIENT-ID}
+            client-secret: ${CLIENT-SECRET}
+            scope: # google API의 범위 값
+              - profile
+              - email
+
+jwt:
+  secret: ${secret}
+  expiration_time: 86400000 #1일
+server:
+  port: 8080
