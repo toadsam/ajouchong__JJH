@@ -15,6 +15,16 @@ spring:
   sql:
     init:
       mode: always
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${CLIENT-ID}
+            client-secret: ${CLIENT-SECRET}
+            scope: # google API의 범위 값
+              - profile
+              - email
 
 jwt:
   secret: ${secret}
