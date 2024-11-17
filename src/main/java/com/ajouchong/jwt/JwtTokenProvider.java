@@ -1,5 +1,7 @@
 package com.ajouchong.jwt;
 
+import com.ajouchong.entity.Member;
+import com.ajouchong.repository.MemberRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -15,10 +17,12 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private final Key secretKey;
+    private final MemberRepository memberRepository;
 
-    public JwtTokenProvider(@Value("${jwt.secret}") String secret) {
+    public JwtTokenProvider(@Value("${jwt.secret}") String secret, MemberRepository memberRepository) {
         // SecretKeySpec을 사용하여 HMAC-SHA256 알고리즘 키 생성
         this.secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
+        this.memberRepository = memberRepository;
     }
 
     // loginId 반환 메서드
@@ -37,6 +41,12 @@ public class JwtTokenProvider {
     public Boolean isExpired(String token) {
         Claims claims = parseClaims(token);
         return claims.getExpiration().before(new Date());
+    }
+
+    public Member getUserFromToken(String token) {
+        String email = getLoginId(token);
+        return memberRepository.findByLoginId(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
     }
 
     // 토큰 생성 메서드
