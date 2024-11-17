@@ -1,6 +1,7 @@
 package com.ajouchong.entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -44,4 +45,13 @@ public class NoticePost {
         this.npUpdateTime = LocalDateTime.now();
     }
 
+    @Builder
+    public NoticePost(String npTitle, String npContent, Member author, List<Attachment> attachments) {
+        this.npTitle = npTitle;
+        this.npContent = npContent;
+        this.author = author;
+        this.attachments = (attachments != null) ? attachments : new ArrayList<>();
+        this.npHitCnt = 0;
+        this.npUserLikeCnt = 0;
+    }
 }
