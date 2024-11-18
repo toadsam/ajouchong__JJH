@@ -22,6 +22,7 @@ spring:
           google:
             client-id: ${CLIENT-ID}
             client-secret: ${CLIENT-SECRET}
+            redirect-uri: ${URI}
             scope: # google API의 범위 값
               - profile
               - email
