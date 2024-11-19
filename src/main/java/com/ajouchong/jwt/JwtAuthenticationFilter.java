@@ -1,8 +1,7 @@
 package com.ajouchong.jwt;
 
-import com.ajouchong.entity.Member;
 import com.ajouchong.entity.enumClass.MemberRole;
-import com.ajouchong.oauth.CustomSecurityUserDetails;
+import com.ajouchong.oauth.GoogleUserDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,56 +22,58 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        // request에서 Authorization 헤더 찾음
+        // Authorization 헤더 추출
         String authorization = request.getHeader("Authorization");
 
         // Authorization 헤더 검증
-        // Authorization 헤더가 비어있거나 "Bearer " 로 시작하지 않은 경우
-        if(authorization == null || !authorization.startsWith("Bearer ")){
-
-            System.out.println("token null");
-            // 토큰이 유효하지 않으므로 request와 response를 다음 필터로 넘겨줌
+        if (!isValidAuthorizationHeader(authorization)) {
+            // Authorization 헤더가 없거나 잘못된 경우 다음 필터로 요청 전달
             filterChain.doFilter(request, response);
-
-            // 메서드 종료
             return;
         }
 
-        // Authorization에서 Bearer 접두사 제거
-        String token = authorization.split(" ")[1];
+        // Bearer 접두사 제거 후 토큰 추출
+        String token = authorization.substring(7);
 
-        // token 소멸 시간 검증
-        // 유효기간이 만료한 경우
-        if(jwtTokenProvider.isExpired(token)){
-            System.out.println("token expired");
-            filterChain.doFilter(request, response);
+        try {
+            // 토큰 만료 여부 확인
+            if (jwtTokenProvider.isExpired(token)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token has expired.");
+                return;
+            }
 
-            // 메서드 종료
+            // 인증 정보 설정
+            setAuthentication(token);
+        } catch (Exception e) {
+            // 토큰 검증 실패 시 예외 처리
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Invalid token: " + e.getMessage());
             return;
         }
 
-        // 최종적으로 token 검증 완료 => 일시적인 session 생성
-        // session에 user 정보 설정
+        // 다음 필터로 요청 전달
+        filterChain.doFilter(request, response);
+    }
+
+    private boolean isValidAuthorizationHeader(String authorization) {
+        return authorization != null && authorization.startsWith("Bearer ");
+    }
+
+    private void setAuthentication(String token) {
+        // 토큰에서 사용자 정보 추출
         String loginId = jwtTokenProvider.getLoginId(token);
-        MemberRole role = MemberRole.valueOf(jwtTokenProvider.getRole(token));
+        String role = jwtTokenProvider.getRole(token);
 
-        Member member = new Member();
-        member.setLoginId(loginId);
-        // 매번 요청마다 DB 조회해서 password 초기화 할 필요 x => 정확한 비밀번호 넣을 필요 없음
-        // 따라서 임시 비밀번호 설정!
-        member.setPassword("임시 비밀번호");
-        member.setRole(role);
-
-        // UserDetails에 회원 정보 객체 담기
-        CustomSecurityUserDetails customSecurityUserDetails = new CustomSecurityUserDetails(member);
+        // GoogleUserDetails 객체 생성
+        GoogleUserDetails userDetails = new GoogleUserDetails(loginId, MemberRole.valueOf(role));
 
         // 스프링 시큐리티 인증 토큰 생성
-        Authentication authToken = new UsernamePasswordAuthenticationToken(customSecurityUserDetails, null, customSecurityUserDetails.getAuthorities());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities()
+        );
 
-        // 세션에 사용자 등록 => 일시적으로 user 세션 생성
-        SecurityContextHolder.getContext().setAuthentication(authToken);
-
-        // 다음 필터로 request, response 넘겨줌
-        filterChain.doFilter(request, response);
+        // SecurityContext에 인증 정보 설정
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }

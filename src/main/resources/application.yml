@@ -11,7 +11,7 @@ spring:
     properties:
       hibernate:
         show_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
   sql:
     init:
       mode: always
@@ -23,6 +23,8 @@ spring:
             client-id: ${CLIENT-ID}
             client-secret: ${CLIENT-SECRET}
             redirect-uri: ${URI}
+            token-uri: https://oauth2.googleapis.com/token
+            resource-uri: https://www.googleapis.com/oauth2/v2/userinfo
             scope: # google API의 범위 값
               - profile
               - email

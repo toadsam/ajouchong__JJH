@@ -1,31 +1,56 @@
 package com.ajouchong.oauth;
 
-import lombok.AllArgsConstructor;
+import com.ajouchong.entity.enumClass.MemberRole;
+import lombok.Getter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Map;
+import java.util.Collection;
+import java.util.Collections;
 
-@AllArgsConstructor
-public class GoogleUserDetails implements OAuth2UserInfo{
+@Getter
+public class GoogleUserDetails implements UserDetails {
 
-    private Map<String, Object> attributes;
+    private final String loginId;
+    private final MemberRole role;
 
-    @Override
-    public String getProvider() {
-        return "google";
+    public GoogleUserDetails(String loginId, MemberRole role) {
+        this.loginId = loginId;
+        this.role = role;
     }
 
     @Override
-    public String getProviderId() {
-        return (String) attributes.get("sub");
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(role);
     }
 
     @Override
-    public String getEmail() {
-        return (String) attributes.get("email");
+    public String getPassword() {
+        return null; // 소셜 로그인 사용자의 경우 비밀번호를 사용하지 않음
     }
 
     @Override
-    public String getName() {
-        return (String) attributes.get("name");
+    public String getUsername() {
+        return loginId;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }
