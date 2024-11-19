@@ -11,6 +11,8 @@ spring:
     properties:
       hibernate:
         show_sql: true
+        hbm2ddl:
+          auto: update
     open-in-view: false
   sql:
     init:
@@ -34,3 +36,6 @@ jwt:
   expiration_time: 86400000 #1일
 server:
   port: 8080
+
+file:
+  dir: ${DIR}
