@@ -29,7 +29,7 @@ spring:
 
 jwt:
   secret: ${secret}
-  expiration_time: 86400000 #1일
+#  expiration_time: 86400000 #1일
 server:
   port: 8080
 
