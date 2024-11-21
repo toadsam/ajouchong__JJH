@@ -20,11 +20,9 @@ spring:
       client:
         registration:
           google:
-            client-id: ${CLIENT-ID}
-            client-secret: ${CLIENT-SECRET}
+            client-id: ${CLIENT_ID}
+            client-secret: ${CLIENT_SECRET}
             redirect-uri: ${URI}
-            token-uri: https://oauth2.googleapis.com/token
-            resource-uri: https://www.googleapis.com/oauth2/v2/userinfo
             scope: # google API의 범위 값
               - profile
               - email
@@ -34,3 +32,6 @@ jwt:
   expiration_time: 86400000 #1일
 server:
   port: 8080
+
+file:
+  dir: ${DIR}
