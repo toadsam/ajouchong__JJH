@@ -30,23 +30,6 @@ public class SecurityConfig {
                         .anyRequest().permitAll() // 그 외 요청 허용
                 );
 
-        // OAuth 2.0 로그인 방식 설정
-        http
-                .oauth2Login(auth -> auth
-                        .loginPage("/oauth-login/login") // 사용자 지정 로그인 페이지
-                        .defaultSuccessUrl("/oauth-login") // 로그인 성공 후 리다이렉트
-                        .failureUrl("/oauth-login/login") // 로그인 실패 시 리다이렉트
-                        .permitAll()
-                );
-
-        // 로그아웃 설정
-        http
-                .logout(auth -> auth
-                        .logoutUrl("/oauth-login/logout") // 로그아웃 URL
-                        .logoutSuccessUrl("/") // 로그아웃 성공 후 리다이렉트
-                        .permitAll()
-                );
-
         http
                 .csrf(AbstractHttpConfigurer::disable);
 
