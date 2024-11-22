@@ -21,12 +21,8 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public boolean checkLoginIdDuplicate(String loginId){
-        return memberRepository.existsByLoginId(loginId);
-    }
-
-    public void join(JoinRequestDto joinRequest) {
-        memberRepository.save(joinRequest.toEntity());
+    public boolean checkLoginIdDuplicate(String email){
+        return memberRepository.existsByLoginId(email);
     }
 
     public void registerSocialUser(GoogleResourceDto googleResourceDto, String provider) {
