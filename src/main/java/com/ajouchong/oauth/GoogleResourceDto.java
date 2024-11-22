@@ -16,17 +16,13 @@ public class GoogleResourceDto {
     @JsonProperty("email")
     private String email;
 
-    @JsonProperty("picture")
-    private String picture;
-
     @JsonProperty("name")
     private String nickname;
 
     @Builder
-    public GoogleResourceDto(String id, String email, String picture, String nickname){
+    public GoogleResourceDto(String id, String email, String nickname){
         this.id = id;
         this.email = email;
-        this.picture = picture;
         this.nickname = nickname;
     }
 }
