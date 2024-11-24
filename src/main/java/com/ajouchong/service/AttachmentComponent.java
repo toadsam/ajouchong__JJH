@@ -18,7 +18,7 @@ import java.util.UUID;
 @Component
 public class AttachmentComponent {
 
-    @Value("${file.dir}")
+    @Value("${DIR}")
     private String fileDirPath;
 
     public List<Attachment> storeFiles(List<MultipartFile> multipartFiles, AttachmentType attachmentType) throws IOException {

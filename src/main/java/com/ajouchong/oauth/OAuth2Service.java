@@ -24,19 +24,19 @@ public class OAuth2Service {
     private final JwtTokenProvider jwtTokenProvider;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${oauth2.google.client-id}")
+    @Value("${CLIENT_ID}")
     private String clientId;
 
-    @Value("${oauth2.google.client-secret}")
+    @Value("${CLIENT_SECRET}")
     private String clientSecret;
 
-    @Value("${oauth2.google.redirect-uri}")
+    @Value("${URI}")
     private String redirectUri;
 
-    @Value("${oauth2.google.token-uri}")
+    @Value("${TOKEN_URI}")
     private String tokenUri;
 
-    @Value("${oauth2.google.resource-uri}")
+    @Value("${RESOURCE_URI}")
     private String resourceUri;
 
     public ApiResponse<String> socialLogin(String code) {
