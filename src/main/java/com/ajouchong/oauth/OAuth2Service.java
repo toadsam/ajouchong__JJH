@@ -48,13 +48,11 @@ public class OAuth2Service {
         String email = googleResourceDto.getEmail();
         String nickname = googleResourceDto.getNickname();
         String provider = "google";
-        System.out.println(accessToken);
-        System.out.println(nickname +  "   " + email);
 
         // 신규 사용자 등록
         if (!memberService.checkLoginIdDuplicate(email)) {
             memberService.registerSocialUser(googleResourceDto, provider);
-            return createLoginResponse(email, "회원가입 및 로그인에 성공했습니다.");
+            return createLoginResponse(email, "회원가입 및 로그인에 성공했습니다." + "email=" + email + ",nickname=" + nickname);
         }
 
         return createLoginResponse(email, "로그인에 성공했습니다.");
