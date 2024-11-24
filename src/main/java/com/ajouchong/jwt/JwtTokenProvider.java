@@ -2,10 +2,9 @@ package com.ajouchong.jwt;
 
 import com.ajouchong.entity.Member;
 import com.ajouchong.repository.MemberRepository;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -28,7 +27,8 @@ public class JwtTokenProvider {
     // loginId 반환 메서드
     public String getLoginId(String token) {
         Claims claims = parseClaims(token);
-        return claims.get("loginId", String.class);
+        String loginId = claims.get("sub", String.class);
+        return loginId;
     }
 
     // role 반환 메서드
@@ -46,26 +46,37 @@ public class JwtTokenProvider {
     public Member getUserFromToken(String token) {
         String email = getLoginId(token);
         return memberRepository.findByLoginId(email)
-                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("로그인 ID가 '" + email + "'인 사용자를 찾을 수 없습니다."));
     }
 
     // 토큰 생성 메서드
     public String createJwt(String loginId, String role, Long expiredMs) {
-        return Jwts.builder()
-                .claim("loginId", loginId)
+        String jwt = Jwts.builder()
+                .setSubject(loginId)
                 .claim("role", role)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiredMs))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
+        return jwt;
     }
+
 
     // 토큰 파싱 메서드
     private Claims parseClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            throw new IllegalArgumentException("토큰이 만료되었습니다.", e);
+        } catch (MalformedJwtException e) {
+            throw new IllegalArgumentException("잘못된 토큰 형식입니다.", e);
+        } catch (JwtException e) {
+            throw new IllegalArgumentException("토큰 처리 중 오류가 발생했습니다.", e);
+        }
     }
+
 }

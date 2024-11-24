@@ -1,7 +1,8 @@
 package com.ajouchong.jwt;
 
+import com.ajouchong.entity.Member;
 import com.ajouchong.entity.enumClass.MemberRole;
-import com.ajouchong.oauth.GoogleUserDetails;
+import com.ajouchong.repository.MemberRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,15 +10,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collections;
 
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final MemberRepository memberRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -48,7 +52,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (Exception e) {
             // 토큰 검증 실패 시 예외 처리
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid token: " + e.getMessage());
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"" + e.getMessage() + "\"}");
             return;
         }
 
@@ -61,19 +67,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void setAuthentication(String token) {
-        // 토큰에서 사용자 정보 추출
         String loginId = jwtTokenProvider.getLoginId(token);
         String role = jwtTokenProvider.getRole(token);
+        Member member = memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("로그인 ID가 '" + loginId + "'인 사용자를 찾을 수 없습니다."));
 
-        // GoogleUserDetails 객체 생성
-        GoogleUserDetails userDetails = new GoogleUserDetails(loginId, MemberRole.valueOf(role));
+        member.setRole(MemberRole.valueOf(role));
 
-        // 스프링 시큐리티 인증 토큰 생성
         Authentication authentication = new UsernamePasswordAuthenticationToken(
-                userDetails, null, userDetails.getAuthorities()
+                member,
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority(member.getRole().name()))
         );
 
-        // SecurityContext에 인증 정보 설정
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
+
+
 }
