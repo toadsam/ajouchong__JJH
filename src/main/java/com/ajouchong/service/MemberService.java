@@ -1,7 +1,5 @@
 package com.ajouchong.service;
 
-import com.ajouchong.dto.request.JoinRequestDto;
-import com.ajouchong.dto.request.LoginRequestDto;
 import com.ajouchong.entity.Member;
 import com.ajouchong.entity.enumClass.MemberRole;
 import com.ajouchong.oauth.GoogleResourceDto;
@@ -11,8 +9,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -21,12 +17,8 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public boolean checkLoginIdDuplicate(String loginId){
-        return memberRepository.existsByLoginId(loginId);
-    }
-
-    public void join(JoinRequestDto joinRequest) {
-        memberRepository.save(joinRequest.toEntity());
+    public boolean checkLoginIdDuplicate(String email) {
+        return memberRepository.existsByLoginId(email);
     }
 
     public void registerSocialUser(GoogleResourceDto googleResourceDto, String provider) {
@@ -49,43 +41,17 @@ public class MemberService {
                 .providerId(providerId) // 소셜 제공자 고유 ID
                 .build();
 
+        System.out.println("Saving Member: " + member);
+
         memberRepository.save(member);
     }
 
-
-
-    public Member login(LoginRequestDto loginRequest) {
-        // loginId로 회원 검색
-        Optional<Member> findMember = memberRepository.findByLoginId(loginRequest.getLoginId());
-
-        // 회원이 존재하지 않으면 null 반환
-        if (findMember.isEmpty()) {
-            return null;
+    public Member getLoginMemberById(String loginId) {
+        if (loginId == null) {
+            throw new IllegalArgumentException("로그인 ID가 비어 있습니다.");
         }
 
-        // 비밀번호가 일치하지 않으면 null 반환
-        Member member = findMember.get();
-        if (!member.getPassword().equals(loginRequest.getPassword())) {
-            return null;
-        }
-
-        return member;
+        return memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("로그인 ID가 '" + loginId + "'인 사용자를 찾을 수 없습니다."));
     }
-
-    public Member getLoginMemberById(String memberId) {
-        if (memberId == null) return null;
-
-        Optional<Member> findMember = memberRepository.findByLoginId(memberId);
-        return findMember.orElse(null);
-    }
-
-    public void securityJoin(JoinRequestDto joinRequest){
-        if(memberRepository.existsByLoginId(joinRequest.getLoginId())){
-            return;
-        }
-
-        joinRequest.setPassword(bCryptPasswordEncoder.encode(joinRequest.getPassword()));
-        memberRepository.save(joinRequest.toEntity());
-    }
-
 }
