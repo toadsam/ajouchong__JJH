@@ -1,6 +1,13 @@
 spring:
   application:
     name: ajouchong
+  config:
+    import: optional:file:./.env
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   profiles:
     active: prod
   jpa:
@@ -16,22 +23,5 @@ spring:
     init:
       mode: always
 
-oauth2:
-  google:
-    client-id: ${CLIENT_ID}
-    client-secret: ${CLIENT_SECRET}
-    token-uri: ${TOKEN_URI}
-    resource-uri: ${RESOURCE_URI}
-    redirect-uri: ${URI}
-    scope: # google API의 범위 값
-      - profile
-      - email
-
-jwt:
-  secret: ${secret}
-#  expiration_time: 86400000 #1일
 server:
   port: 8080
-
-file:
-  dir: ${DIR}

@@ -18,7 +18,7 @@ public class JwtTokenProvider {
     private final Key secretKey;
     private final MemberRepository memberRepository;
 
-    public JwtTokenProvider(@Value("${jwt.secret}") String secret, MemberRepository memberRepository) {
+    public JwtTokenProvider(@Value("${JWT_SECRET}") String secret, MemberRepository memberRepository) {
         // SecretKeySpec을 사용하여 HMAC-SHA256 알고리즘 키 생성
         this.secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
         this.memberRepository = memberRepository;
