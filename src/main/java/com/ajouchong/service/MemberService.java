@@ -41,6 +41,17 @@ public class MemberService {
                 .providerId(providerId) // 소셜 제공자 고유 ID
                 .build();
 
+        System.out.println("Saving Member: " + member);
+
         memberRepository.save(member);
+    }
+
+    public Member getLoginMemberById(String loginId) {
+        if (loginId == null) {
+            throw new IllegalArgumentException("로그인 ID가 비어 있습니다.");
+        }
+
+        return memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new IllegalArgumentException("로그인 ID가 '" + loginId + "'인 사용자를 찾을 수 없습니다."));
     }
 }
