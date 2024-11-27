@@ -22,7 +22,7 @@ public class OAuthController {
 
         // ajouchong.com으로 리다이렉트
         response.setStatus(HttpServletResponse.SC_FOUND);
-        response.setHeader("Location", "https://ajouchong.com");
+        response.setHeader("Location", "https://www.ajouchong.com");
     }
 }
 
