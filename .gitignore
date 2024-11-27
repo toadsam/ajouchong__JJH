@@ -46,3 +46,4 @@ out/
 ./img/**
 
 /src/main/resources/templates/
+img/
