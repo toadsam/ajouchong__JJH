@@ -14,17 +14,33 @@ services:
       - ajouchong-network
 
   backend:
-    image: ytnwjd/ajouchong-backend:latest
+    image: ghcr.io/2024-ajouchong/2024-ajouchong/ajouchong:a9cab46
     container_name: ajouchong-backend
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
+      DIR: ${DIR}
+      CLIENT_ID: ${CLIENT_ID}
+      CLIENT_SECRET: ${CLIENT_SECRET}
+      TOKEN_URI: ${TOKEN_URI}
+      RESOURCE_URI: ${RESOURCE_URI]
+      URI: ${URI}
     depends_on:
       - database
     ports:
       - "8080:8080"
+    networks:
+      - ajouchong-network
+
+  frontend:
+    image: ohtaelim/chong:latest
+    container_name: ajouchong-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
     networks:
       - ajouchong-network
 
