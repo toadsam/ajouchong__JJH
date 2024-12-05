@@ -61,8 +61,8 @@ public class AttachmentComponent {
 
 
     private String createPath(String storeFilename, AttachmentType attachmentType) {
-        String viaPath = (attachmentType == AttachmentType.IMAGE) ? "images/" : "generals/";
-        return fileDirPath.endsWith("/") ? fileDirPath + viaPath + storeFilename : fileDirPath + "/" + viaPath + storeFilename;
+        String viaPath = (attachmentType == AttachmentType.IMAGE) ? "images" : "generals";
+        return Paths.get(fileDirPath, viaPath, storeFilename).toString();
     }
 
 
