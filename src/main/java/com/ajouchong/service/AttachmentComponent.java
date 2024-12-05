@@ -35,7 +35,7 @@ public class AttachmentComponent {
 
     public Attachment storeFile(MultipartFile multipartFile, AttachmentType attachmentType) throws IOException {
         if (multipartFile.isEmpty()) {
-            return null;
+            throw new IllegalArgumentException("Empty file cannot be stored.");
         }
 
         String originalFilename = multipartFile.getOriginalFilename();
@@ -50,7 +50,11 @@ public class AttachmentComponent {
             Files.createDirectories(directoryPath);
         }
 
-        multipartFile.transferTo(new File(fullPath));
+        try {
+            multipartFile.transferTo(new File(fullPath));
+        } catch (IOException e) {
+            throw new IOException("Failed to store file: " + originalFilename, e);
+        }
 
         return Attachment.builder()
                 .originFilename(originalFilename)
@@ -58,6 +62,7 @@ public class AttachmentComponent {
                 .attachmentType(attachmentType)
                 .build();
     }
+
 
 
     private String createPath(String storeFilename, AttachmentType attachmentType) {
