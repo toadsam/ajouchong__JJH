@@ -26,6 +26,8 @@ public class NoticePostService {
     private final NoticePostRepository noticePostRepository;
     private final AttachmentService attachmentService;
 
+    /*
+    login 후 게시글 업로드
     @Transactional
     public NoticePostResponseDto saveNoticePost(NoticePostRequestDto requestDto, String token) throws IOException {
         // 토큰에서 loginId 추출
@@ -54,6 +56,43 @@ public class NoticePostService {
 
         return convertToResponseDto(savedNoticePost);
     }
+     */
+
+    @Transactional
+    public NoticePostResponseDto saveNoticePost(NoticePostRequestDto requestDto, String token) throws IOException {
+        Member author = null;
+
+        // 로그인된 사용자 정보 추출 (토큰이 있을 경우에만)
+        if (token != null && !token.isBlank()) {
+            try {
+                String loginId = jwtTokenProvider.getLoginId(token);
+                author = memberRepository.findByLoginId(loginId)
+                        .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+            } catch (Exception e) {
+                // 토큰이 유효하지 않을 경우 무시하고 비로그인 상태로 처리
+                author = null;
+            }
+        }
+
+        // 게시물 저장
+        NoticePost noticePost = NoticePost.builder()
+                .author(author) // 로그인된 사용자 정보가 없으면 null로 저장
+                .npTitle(requestDto.getTitle())
+                .npContent(requestDto.getContent())
+                .build();
+
+        NoticePost savedNoticePost = noticePostRepository.save(noticePost);
+
+        // 첨부 파일 처리
+        List<Attachment> attachments = attachmentService.saveAttachments(requestDto.getAttachmentFiles());
+        attachments.forEach(attachment -> attachment.setNoticePost(savedNoticePost));
+
+        savedNoticePost.setAttachments(attachments);
+        noticePostRepository.save(savedNoticePost);
+
+        return convertToResponseDto(savedNoticePost);
+    }
+
 
     @Transactional(readOnly = true)
     public List<NoticePostResponseDto> getAllNoticePosts() {
