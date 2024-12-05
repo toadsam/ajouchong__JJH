@@ -135,12 +135,12 @@ public class NoticePostService {
     private NoticePostResponseDto convertToResponseDto(NoticePost noticePost) {
         List<String> imageUrls = noticePost.getAttachments().stream()
                 .filter(attachment -> attachment.getAttachmentType() == AttachmentType.IMAGE)
-                .map(Attachment::getStoreFilename)
+                .map(attachment -> createImageUrl(attachment.getStoreFilename(), attachment.getAttachmentType()))
                 .collect(Collectors.toList());
 
         List<String> generalUrls = noticePost.getAttachments().stream()
                 .filter(attachment -> attachment.getAttachmentType() == AttachmentType.GENERAL)
-                .map(Attachment::getStoreFilename)
+                .map(attachment -> createImageUrl(attachment.getStoreFilename(), attachment.getAttachmentType()))
                 .collect(Collectors.toList());
 
         return NoticePostResponseDto.builder()
@@ -155,5 +155,12 @@ public class NoticePostService {
                 .generalUrls(generalUrls)
                 .build();
     }
+
+    private String createImageUrl(String filename, AttachmentType attachmentType) {
+        String directory = (attachmentType == AttachmentType.IMAGE) ? "images" : "generals";
+        return "https://www.ajouchong.com/img/" + directory + "/" + filename;
+    }
+
+
 }
 
