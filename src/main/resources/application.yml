@@ -22,6 +22,9 @@ spring:
   sql:
     init:
       mode: always
+  web:
+    resources:
+      static-locations: file:/home/ubuntu/ajouchong/img/
 
 server:
   port: 8080
