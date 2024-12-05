@@ -33,7 +33,7 @@ public class SecurityConfig {
         // 접근 권한 설정
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/favicon.ico").permitAll()
+                        .requestMatchers("/favicon.ico", "/img/**").permitAll()
                         .requestMatchers("/api/admin").hasRole(MemberRole.ADMIN.name()) // ADMIN 권한 필요
                         .requestMatchers("/api/auth/profile").authenticated() // 인증 필요
                         .anyRequest().permitAll() // 그 외 요청 허용
