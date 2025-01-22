@@ -83,8 +83,10 @@ public class NoticePostService {
             }
         }
 
-        NoticePost savedNoticePost = requestDto.createNoticePost(imageUrls);
-        savedNoticePost.setImageUrls(imageUrls);
+        NoticePost noticePost = requestDto.createNoticePost(imageUrls);
+        noticePost.setImageUrls(imageUrls);
+
+        NoticePost savedNoticePost = noticePostRepository.save(noticePost);
 
         return convertToResponseDto(savedNoticePost);
     }
