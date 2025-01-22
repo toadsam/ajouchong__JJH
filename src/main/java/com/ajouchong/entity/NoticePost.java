@@ -21,7 +21,7 @@ public class NoticePost {
     private String npTitle;
     private String npContent;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "noticePost_images", joinColumns = @JoinColumn(name = "nPostId"))
     @Column(name = "image_url")
     private List<String> imageUrls = new ArrayList<>(); // S3에 저장된 이미지 URL 리스트

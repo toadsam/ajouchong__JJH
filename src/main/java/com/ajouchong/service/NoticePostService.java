@@ -8,6 +8,10 @@ import com.ajouchong.jwt.JwtTokenProvider;
 import com.ajouchong.repository.MemberRepository;
 import com.ajouchong.repository.NoticePostRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -93,9 +97,11 @@ public class NoticePostService {
     }
 
 
-    @Transactional(readOnly = true)
-    public List<NoticePostResponseDto> getAllNoticePosts() {
-        return noticePostRepository.findAll().stream()
+    public List<NoticePostResponseDto> getLatestNoticePosts(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "npCreateTime"));
+        Page<NoticePost> noticePostPage = noticePostRepository.findAllByOrderByNpCreateTimeDesc(pageable);
+
+        return noticePostPage.getContent().stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());
     }
