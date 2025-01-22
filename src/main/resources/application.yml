@@ -22,9 +22,16 @@ spring:
   sql:
     init:
       mode: always
-  web:
-    resources:
-      static-locations: file:/home/ubuntu/ajouchong/img/
 
 server:
   port: 8080
+
+cloud:
+  aws:
+    s3:
+      bucket: ${BUCKET_NAME}
+    stack.auto: false
+    region.static: ap-northeast-2
+    credentials:
+      accessKey: ${ACCESS_KEY}
+      secretKey: ${SECRET_KEY}
