@@ -1,14 +1,14 @@
 package com.ajouchong.dto.response;
 
-import lombok.Builder;
+import com.ajouchong.entity.NoticePost;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter @Setter
-@Builder
 public class NoticePostResponseDto {
     private Long nPost_id;
     private String npTitle;
@@ -18,6 +18,16 @@ public class NoticePostResponseDto {
     private LocalDateTime npCreateTime;
     private LocalDateTime npUpdateTime;
     private List<String> imageUrls;     // 이미지 파일 URL
-    private List<String> generalUrls;   // 일반 파일 URL
+
+    public NoticePostResponseDto(NoticePost noticePost) {
+        this.nPost_id = noticePost.getNPostId();
+        this.npTitle = noticePost.getNpTitle();
+        this.npContent = noticePost.getNpContent();
+        this.npUserLikeCnt = noticePost.getNpUserLikeCnt();
+        this.npHitCnt = noticePost.getNpHitCnt();
+        this.npCreateTime = noticePost.getNpCreateTime();
+        this.npUpdateTime = noticePost.getNpUpdateTime();
+        this.imageUrls = new ArrayList<>(noticePost.getImageUrls());
+    }
 }
 

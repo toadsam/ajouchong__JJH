@@ -21,8 +21,10 @@ public class NoticePost {
     private String npTitle;
     private String npContent;
 
-    @OneToMany(mappedBy = "noticePost", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Attachment> attachments = new ArrayList<>();
+    @ElementCollection
+    @CollectionTable(name = "noticePost_images", joinColumns = @JoinColumn(name = "nPostId"))
+    @Column(name = "image_url")
+    private List<String> imageUrls = new ArrayList<>(); // S3에 저장된 이미지 URL 리스트
 
     private int npUserLikeCnt = 0;
     private int npHitCnt = 0;
@@ -46,11 +48,11 @@ public class NoticePost {
     }
 
     @Builder
-    public NoticePost(String npTitle, String npContent, Member author, List<Attachment> attachments) {
+    public NoticePost(String npTitle, String npContent, Member author, List<String> imageUrls) {
         this.npTitle = npTitle;
         this.npContent = npContent;
         this.author = author;
-        this.attachments = (attachments != null) ? attachments : new ArrayList<>();
+        this.imageUrls = (imageUrls != null) ? imageUrls : new ArrayList<>();
         this.npHitCnt = 0;
         this.npUserLikeCnt = 0;
     }
