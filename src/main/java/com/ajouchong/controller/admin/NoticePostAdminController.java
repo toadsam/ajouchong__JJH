@@ -52,8 +52,13 @@ public class NoticePostAdminController {
             }
         }
 
-        // NoticePostRequestDto 생성 (user가 null일 수도 있음)
-        NoticePostRequestDto noticePostRequestDto = requestDto.createNoticePostDto(user);
+        NoticePostRequestDto noticePostRequestDto = NoticePostRequestDto.builder()
+                .author(user)
+                .title(requestDto.getTitle())
+                .content(requestDto.getContent())
+                .imageFiles(requestDto.getImageFiles()) // 이미지 파일만 처리
+                .build();
+
         NoticePostResponseDto savedNoticePost = noticePostService.saveNoticePost(noticePostRequestDto, token);
 
         return new ApiResponse<>(1, "게시글 업로드 성공", savedNoticePost);
