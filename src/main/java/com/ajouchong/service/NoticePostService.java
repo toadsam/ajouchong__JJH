@@ -85,6 +85,7 @@ public class NoticePostService {
 
         NoticePost noticePost = requestDto.createNoticePost(imageUrls);
         noticePost.setImageUrls(imageUrls);
+        noticePost.setAuthor(author);
 
         NoticePost savedNoticePost = noticePostRepository.save(noticePost);
 
