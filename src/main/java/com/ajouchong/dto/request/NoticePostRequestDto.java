@@ -2,7 +2,6 @@ package com.ajouchong.dto.request;
 
 import com.ajouchong.entity.Member;
 import com.ajouchong.entity.NoticePost;
-import com.ajouchong.entity.enumClass.AttachmentType;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,8 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Getter @Setter
 public class NoticePostRequestDto {
@@ -23,22 +20,22 @@ public class NoticePostRequestDto {
 
     @NotBlank
     private String content;
-    private Map<AttachmentType, List<MultipartFile>> attachmentFiles = new ConcurrentHashMap<>();
+    private List<MultipartFile> imageFiles = new ArrayList<>(); // 이미지 파일 리스트
 
     @Builder
-    public NoticePostRequestDto(Member author, String title, String content, Map<AttachmentType, List<MultipartFile>> attachmentFiles) {
+    public NoticePostRequestDto(Member author, String title, String content, List<MultipartFile> imageFiles) {
         this.author = author;
         this.title = title;
         this.content = content;
-        this.attachmentFiles = attachmentFiles;
+        this.imageFiles = imageFiles;
     }
 
-    public NoticePost createNoticePost() {
+    public NoticePost createNoticePost(List<String> imageUrls) {
         NoticePost noticePost = new NoticePost();
         noticePost.setAuthor(this.author);
         noticePost.setNpTitle(this.title);
         noticePost.setNpContent(this.content);
-        noticePost.setAttachments(new ArrayList<>());
+        noticePost.setImageUrls(imageUrls); // 이미지 URL 리스트 설정
 
         return noticePost;
     }
