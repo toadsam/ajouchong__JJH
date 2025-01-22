@@ -2,18 +2,18 @@ package com.ajouchong.service;
 
 import com.ajouchong.dto.request.NoticePostRequestDto;
 import com.ajouchong.dto.response.NoticePostResponseDto;
-import com.ajouchong.entity.Attachment;
 import com.ajouchong.entity.Member;
 import com.ajouchong.entity.NoticePost;
-import com.ajouchong.entity.enumClass.AttachmentType;
 import com.ajouchong.jwt.JwtTokenProvider;
 import com.ajouchong.repository.MemberRepository;
 import com.ajouchong.repository.NoticePostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,7 +24,7 @@ public class NoticePostService {
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final NoticePostRepository noticePostRepository;
-    private final AttachmentService attachmentService;
+    private final S3UploadService s3UploadService;
 
     /*
     login 후 게시글 업로드
@@ -74,21 +74,17 @@ public class NoticePostService {
             }
         }
 
-        // 게시물 저장
-        NoticePost noticePost = NoticePost.builder()
-                .author(author) // 로그인된 사용자 정보가 없으면 null로 저장
-                .npTitle(requestDto.getTitle())
-                .npContent(requestDto.getContent())
-                .build();
+        // 이미지 파일 처리
+        List<String> imageUrls = new ArrayList<>();
+        if (requestDto.getImageFiles() != null && !requestDto.getImageFiles().isEmpty()) {
+            for (MultipartFile file : requestDto.getImageFiles()) {
+                String image = s3UploadService.saveFile(file); // S3에 업로드 후 URL 반환
+                imageUrls.add(image);
+            }
+        }
 
-        NoticePost savedNoticePost = noticePostRepository.save(noticePost);
-
-        // 첨부 파일 처리
-        List<Attachment> attachments = attachmentService.saveAttachments(requestDto.getAttachmentFiles());
-        attachments.forEach(attachment -> attachment.setNoticePost(savedNoticePost));
-
-        savedNoticePost.setAttachments(attachments);
-        noticePostRepository.save(savedNoticePost);
+        NoticePost savedNoticePost = requestDto.createNoticePost(imageUrls);
+        savedNoticePost.setImageUrls(imageUrls);
 
         return convertToResponseDto(savedNoticePost);
     }
@@ -132,35 +128,9 @@ public class NoticePostService {
         noticePostRepository.save(noticePost);
     }
 
-    private NoticePostResponseDto convertToResponseDto(NoticePost noticePost) {
-        List<String> imageUrls = noticePost.getAttachments().stream()
-                .filter(attachment -> attachment.getAttachmentType() == AttachmentType.IMAGE)
-                .map(attachment -> createImageUrl(attachment.getStoreFilename(), attachment.getAttachmentType()))
-                .collect(Collectors.toList());
-
-        List<String> generalUrls = noticePost.getAttachments().stream()
-                .filter(attachment -> attachment.getAttachmentType() == AttachmentType.GENERAL)
-                .map(attachment -> createImageUrl(attachment.getStoreFilename(), attachment.getAttachmentType()))
-                .collect(Collectors.toList());
-
-        return NoticePostResponseDto.builder()
-                .nPost_id(noticePost.getNPostId())
-                .npTitle(noticePost.getNpTitle())
-                .npContent(noticePost.getNpContent())
-                .npUserLikeCnt(noticePost.getNpUserLikeCnt())
-                .npHitCnt(noticePost.getNpHitCnt())
-                .npCreateTime(noticePost.getNpCreateTime())
-                .npUpdateTime(noticePost.getNpUpdateTime())
-                .imageUrls(imageUrls)
-                .generalUrls(generalUrls)
-                .build();
+    public NoticePostResponseDto convertToResponseDto(NoticePost noticePost) {
+        return new NoticePostResponseDto(noticePost);
     }
-
-    private String createImageUrl(String filename, AttachmentType attachmentType) {
-        String directory = (attachmentType == AttachmentType.IMAGE) ? "images" : "generals";
-        return "https://www.ajouchong.com/img/" + directory + "/" + filename;
-    }
-
 
 }
 
