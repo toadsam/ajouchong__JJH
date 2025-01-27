@@ -16,8 +16,10 @@ public class PartnershipUserController {
     }
 
     @GetMapping
-    public ApiResponse<List<PartnershipResponseDto>> getAllPartnerships() {
-        List<PartnershipResponseDto> partnerships = partnershipService.getAllPartnerships();
+    public ApiResponse<List<PartnershipResponseDto>> getAllPartnerships(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        List<PartnershipResponseDto> partnerships = partnershipService.getLatestPartnerships(page, size);
         return new ApiResponse<>(1, "모든 제휴 백과 목록 조회 성공", partnerships);
     }
 
