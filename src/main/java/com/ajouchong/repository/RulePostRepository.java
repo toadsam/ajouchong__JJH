@@ -9,5 +9,6 @@ import java.util.List;
 
 @Repository
 public interface RulePostRepository extends JpaRepository<RulePost, Long> {
-    List<RulePost> findByType(RuleType type);
+    List<RulePost> findByTypeOrderByRpCreateTimeDesc(RuleType type);
 }
+
