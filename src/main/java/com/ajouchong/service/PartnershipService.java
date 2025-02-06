@@ -5,9 +5,6 @@ import com.ajouchong.dto.response.PartnershipResponseDto;
 import com.ajouchong.entity.Partnership;
 import com.ajouchong.repository.PartnershipRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,11 +80,12 @@ public class PartnershipService {
 //        return convertToDto(partnership);
 //    }
 
-    public List<PartnershipResponseDto> getLatestPartnerships(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "psCreateTime"));
-        Page<Partnership> partnerships = partnershipRepository.findAllByOrderByPsCreateTimeDesc(pageable);
+    public List<PartnershipResponseDto> getLatestPartnerships() {
+        List<Partnership> partnerships = partnershipRepository.findAll(Sort.by(Sort.Direction.DESC, "psCreateTime"));
 
-        return partnerships.stream().map(this::convertToDto).collect(Collectors.toList());
+        return partnerships.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

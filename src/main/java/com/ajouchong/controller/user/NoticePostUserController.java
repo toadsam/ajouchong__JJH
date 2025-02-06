@@ -17,11 +17,9 @@ public class NoticePostUserController {
     }
 
     @GetMapping
-    public ApiResponse<List<NoticePostResponseDto>> getLatestNoticePosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        List<NoticePostResponseDto> latestPosts = noticePostService.getLatestNoticePosts(page, size);
-        return new ApiResponse<>(1, "최신 게시글 조회 성공", latestPosts);
+    public ApiResponse<List<NoticePostResponseDto>> getAllNoticePosts() {
+        List<NoticePostResponseDto> allPosts = noticePostService.getLatestNoticePosts();
+        return new ApiResponse<>(1, "모든 게시글 조회 성공", allPosts);
     }
 
     // 특정 게시물 조회
