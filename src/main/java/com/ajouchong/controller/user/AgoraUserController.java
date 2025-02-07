@@ -26,8 +26,8 @@ public class AgoraUserController {
     }
 
     @GetMapping
-    public ApiResponse<List<Agora>> getAllPosts() {
-        List<Agora> allPosts = agoraService.getAllPosts();
+    public ApiResponse<List<AgoraResponseDto>> getAllPosts() {
+        List<AgoraResponseDto> allPosts = agoraService.getAllPosts();
         return new ApiResponse<>(1, "전체 게시글 목록 조회 성공", allPosts);
     }
 

@@ -4,10 +4,12 @@ import com.ajouchong.dto.request.AgoraRequestDto;
 import com.ajouchong.dto.response.AgoraResponseDto;
 import com.ajouchong.entity.Agora;
 import com.ajouchong.repository.AgoraRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AgoraService {
@@ -39,8 +41,11 @@ public class AgoraService {
     }
 
     @Transactional(readOnly = true)
-    public List<Agora> getAllPosts() {
-        return agoraRepository.findAll();
+    public List<AgoraResponseDto> getAllPosts() {
+        List<Agora> agoras = agoraRepository.findAll(Sort.by(Sort.Direction.DESC, "createTime"));
+
+        return agoras.stream().map(this::convertToResponseDto)
+                .collect(Collectors.toList());
     }
 
 
@@ -75,5 +80,9 @@ public class AgoraService {
 
         agora.incrementUserLikeCount();
         agoraRepository.save(agora);
+    }
+
+    public AgoraResponseDto convertToResponseDto(Agora agora) {
+        return new AgoraResponseDto(agora);
     }
 }
