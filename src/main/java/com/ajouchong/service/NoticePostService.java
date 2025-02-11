@@ -101,11 +101,15 @@ public class NoticePostService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public NoticePostResponseDto getNoticePostById(Long id) {
-        NoticePost post = noticePostRepository.findById(id)
+    @Transactional
+    public NoticePostResponseDto getNoticePostWithHitIncrement(Long id) {
+        NoticePost noticePost = noticePostRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException(id + "번 게시글을 찾을 수 없습니다."));
-        return convertToResponseDto(post);
+
+        noticePost.setNpHitCnt(noticePost.getNpHitCnt() + 1);
+        noticePostRepository.save(noticePost);
+
+        return convertToResponseDto(noticePost);
     }
 
     @Transactional

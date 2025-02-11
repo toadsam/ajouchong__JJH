@@ -25,8 +25,7 @@ public class NoticePostUserController {
     // 특정 게시물 조회
     @GetMapping("/{id}")
     public ApiResponse<NoticePostResponseDto> getNoticePostById(@PathVariable Long id) {
-        noticePostService.increaseHitCount(id);
-        NoticePostResponseDto post = noticePostService.getNoticePostById(id);
+        NoticePostResponseDto post = noticePostService.getNoticePostWithHitIncrement(id);
         return new ApiResponse<>(1, id + "번 게시글 조회 성공", post);
     }
 
