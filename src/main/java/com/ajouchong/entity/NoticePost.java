@@ -20,6 +20,8 @@ public class NoticePost {
     private Long nPostId;
 
     private String npTitle;
+
+    @Column(columnDefinition = "TEXT")
     private String npContent;
 
     @ElementCollection(fetch = FetchType.EAGER)

@@ -17,6 +17,8 @@ public class QnaPost {
     private Long qPostId;
 
     private String qpTitle;
+
+    @Column(columnDefinition = "TEXT")
     private String qpContent;
 
     private boolean isReplied = false;

@@ -17,6 +17,7 @@ public class Partnership {
     private Long psPostId;
 
     private String psTitle;
+
     @Column(columnDefinition = "TEXT")
     private String psContent;
 
