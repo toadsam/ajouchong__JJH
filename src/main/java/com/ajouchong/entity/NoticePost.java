@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,13 +39,13 @@ public class NoticePost {
 
     @PrePersist
     protected void onCreate() {
-        this.npCreateTime = LocalDateTime.now();
-        this.npUpdateTime = LocalDateTime.now();
+        this.npCreateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        this.npUpdateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.npUpdateTime = LocalDateTime.now();
+        this.npUpdateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
     }
 
     @Builder
