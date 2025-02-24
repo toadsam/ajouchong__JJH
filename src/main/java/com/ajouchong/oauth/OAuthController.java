@@ -1,13 +1,9 @@
-package com.ajouchong.controller.user;
+package com.ajouchong.oauth;
 
 import com.ajouchong.common.ApiResponse;
 import com.ajouchong.entity.Member;
 import com.ajouchong.entity.enumClass.MemberRole;
 import com.ajouchong.jwt.JwtTokenProvider;
-import com.ajouchong.oauth.GoogleOAuthService;
-import com.ajouchong.oauth.GoogleUserDto;
-import com.ajouchong.oauth.OAuthRequestDto;
-import com.ajouchong.oauth.OAuthResponseDto;
 import com.ajouchong.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +34,7 @@ public class OAuthController {
         String jwtToken = jwtTokenProvider.createJwt(member.getEmail(), member.getRole());
 
         OAuthResponseDto responseDto = new OAuthResponseDto(jwtToken, member);
+        log.debug("responeDto: {}", responseDto);;
 
         return new ApiResponse<>(1, "Google login 성공", responseDto);
     }
