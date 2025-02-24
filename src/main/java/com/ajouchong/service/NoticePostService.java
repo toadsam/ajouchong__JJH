@@ -8,6 +8,7 @@ import com.ajouchong.jwt.JwtTokenProvider;
 import com.ajouchong.repository.MemberRepository;
 import com.ajouchong.repository.NoticePostRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NoticePostService {
@@ -66,12 +68,11 @@ public class NoticePostService {
         // 로그인된 사용자 정보 추출 (토큰이 있을 경우에만)
         if (token != null && !token.isBlank()) {
             try {
-                String loginId = jwtTokenProvider.getLoginId(token);
-                author = memberRepository.findByLoginId(loginId)
+                String email = jwtTokenProvider.getEmailFromToken(token);
+                author = memberRepository.findByEmail(email)
                         .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
             } catch (Exception e) {
-                // 토큰이 유효하지 않을 경우 무시하고 비로그인 상태로 처리
-                author = null;
+                log.debug("err");
             }
         }
 
