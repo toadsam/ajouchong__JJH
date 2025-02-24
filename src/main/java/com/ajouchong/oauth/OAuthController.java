@@ -21,7 +21,6 @@ public class OAuthController {
 
     @PostMapping("/oauth")
     public ApiResponse<OAuthResponseDto> googleLogin(@RequestBody OAuthRequestDto request) {
-
         GoogleUserDto googleUser = googleOAuthService.getUserInfo(request.getAccessToken());
 
         Member member = memberRepository.findByEmail(googleUser.getEmail())
@@ -31,18 +30,27 @@ public class OAuthController {
                     return memberRepository.save(newMember);
                 });
 
-        String jwtToken = jwtTokenProvider.createJwt(member.getEmail(), member.getRole());
-
+        String jwtToken = jwtTokenProvider.createAccessToken(member.getEmail(), member.getRole());
         OAuthResponseDto responseDto = new OAuthResponseDto(jwtToken, member);
-        log.debug("responeDto: {}", responseDto);;
+
+        log.debug("responeDto: {}", responseDto);
 
         return new ApiResponse<>(1, "Google login 성공", responseDto);
     }
 
     @GetMapping("/info")
     public ApiResponse<OAuthResponseDto> getUserInfo(@RequestHeader("Authorization") String jwtToken) {
+        if (jwtToken == null || !jwtToken.startsWith("Bearer ")) {
+            return new ApiResponse<>(0, "Invalid or missing token", null);
+        }
 
-        String email = jwtTokenProvider.getEmailFromToken(jwtToken.replace("Bearer ", ""));
+        String token = jwtToken.replace("Bearer ", "");
+
+        if (jwtTokenProvider.isExpired(token)) {
+            return new ApiResponse<>(0, "Token has expired", null);
+        }
+
+        String email = jwtTokenProvider.getEmailFromToken(token);
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("회원 정보가 없습니다."));
 
@@ -51,4 +59,3 @@ public class OAuthController {
         return new ApiResponse<>(1, "회원 정보 조회 성공", responseDto);
     }
 }
-

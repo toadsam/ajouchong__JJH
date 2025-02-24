@@ -1,8 +1,7 @@
 package com.ajouchong.jwt;
 
 import com.ajouchong.entity.enumClass.MemberRole;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -15,33 +14,52 @@ import java.util.Date;
 public class JwtTokenProvider {
 
     private final SecretKey secretKey;
+    private final long accessTokenValidity = 1000L * 60 * 60 * 24; // 1일
+    private final long refreshTokenValidity = 1000L * 60 * 60 * 24 * 7; // 7일
 
     public JwtTokenProvider(@Value("${jwt.secret}") String secret) {
-        // SecretKeySpec을 사용하여 HMAC-SHA256 알고리즘 키 생성
-        this.secretKey = Keys.hmacShaKeyFor(Base64.getEncoder().encode(secret.getBytes()));
+        this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
     }
 
-    public String createJwt(String email, MemberRole role) {
-        long expiredMs = 86400000;  // 1일
+    public String createAccessToken(String email, MemberRole role) {
+        return generateToken(email, role.name(), accessTokenValidity);
+    }
+
+    public String createRefreshToken(String email) {
+        return generateToken(email, null, refreshTokenValidity);
+    }
+
+    private String generateToken(String email, String role, long validity) {
+        Claims claims = Jwts.claims().setSubject(email);
+        if (role != null) {
+            claims.put("role", role);
+        }
+
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + validity);
 
         return Jwts.builder()
-                .setSubject(email)
-                .claim("role", role.name())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiredMs))
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public Boolean isExpired(String token) {
+    public boolean isExpired(String token) {
         try {
-            Jwts.parserBuilder()
+            Date expiration = Jwts.parserBuilder()
                     .setSigningKey(secretKey)
                     .build()
-                    .parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            return false;
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getExpiration();
+
+            return expiration.before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true; // 만료
+        } catch (JwtException e) {
+            return false; // 기타 오류로 인해 유효하지 않음
         }
     }
 
@@ -55,11 +73,12 @@ public class JwtTokenProvider {
     }
 
     public String getRoleFromToken(String token) {
-        return Jwts.parserBuilder()
+        Claims claims = Jwts.parserBuilder()
                 .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .get("role", String.class);
+                .getBody();
+
+        return claims.get("role", String.class);
     }
 }
