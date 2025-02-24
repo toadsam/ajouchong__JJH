@@ -67,10 +67,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void setAuthentication(String token) {
-        String loginId = jwtTokenProvider.getLoginId(token);
-        String role = jwtTokenProvider.getRole(token);
-        Member member = memberRepository.findByLoginId(loginId)
-                .orElseThrow(() -> new IllegalArgumentException("로그인 ID가 '" + loginId + "'인 사용자를 찾을 수 없습니다."));
+        String email = jwtTokenProvider.getEmailFromToken(token);
+        String role = jwtTokenProvider.getRoleFromToken(token);
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException(email + " 사용자를 찾을 수 없습니다."));
 
         member.setRole(MemberRole.valueOf(role));
 
