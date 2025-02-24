@@ -1,2 +1,8 @@
-package com.ajouchong.oauth;public class OAuthRequestDto {
+package com.ajouchong.oauth;
+
+import lombok.Data;
+
+@Data
+public class OAuthRequestDto {
+    private String accessToken;
 }
