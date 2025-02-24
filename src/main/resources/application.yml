@@ -10,6 +10,7 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
   profiles:
     active: prod
+    include: oauth
   jpa:
     show-sql: true
     database: postgresql
@@ -29,6 +30,9 @@ spring:
         max-request-size: 10MB
   jackson:
     time-zone: Asia/Seoul
+
+jwt:
+  secret: ${JWT_SECRET}
 
 server:
   port: 8080

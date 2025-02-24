@@ -1,7 +1,9 @@
 package com.ajouchong.entity;
 
 import com.ajouchong.entity.enumClass.MemberRole;
+import com.ajouchong.oauth.GoogleUserDto;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Entity
@@ -10,23 +12,27 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 public class Member {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="member_id")
     private Long id;
 
-    private String loginId;
-    private String password;
+    @NotNull
     private String name;
 
+    @NotNull
+    private String email;
+
+    @NotNull
     @Enumerated(EnumType.STRING)
     private MemberRole role;
 
-    // provider : google이 들어감
-    private String provider;
+    public Member(GoogleUserDto googleUser) {
+        this.email = googleUser.getEmail();
+        this.name = googleUser.getName();
+        this.role = (googleUser.getRole() != null) ?
+                MemberRole.valueOf(googleUser.getRole()) : MemberRole.STUDENT;
+    }
 
-    // providerId : 구굴 로그인 한 유저의 고유 ID가 들어감
-    private String providerId;
 }

@@ -1,82 +1,84 @@
 package com.ajouchong.jwt;
 
-import com.ajouchong.entity.Member;
-import com.ajouchong.repository.MemberRepository;
+import com.ajouchong.entity.enumClass.MemberRole;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
+import javax.crypto.SecretKey;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
 
-    private final Key secretKey;
-    private final MemberRepository memberRepository;
+    private final SecretKey secretKey;
+    private final long accessTokenValidity = 1000L * 60 * 60 * 24; // 1일
+    private final long refreshTokenValidity = 1000L * 60 * 60 * 24 * 7; // 7일
 
-    public JwtTokenProvider(@Value("${JWT_SECRET}") String secret, MemberRepository memberRepository) {
-        // SecretKeySpec을 사용하여 HMAC-SHA256 알고리즘 키 생성
-        this.secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), SignatureAlgorithm.HS256.getJcaName());
-        this.memberRepository = memberRepository;
+    public JwtTokenProvider(@Value("${jwt.secret}") String secret) {
+        this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
     }
 
-    // loginId 반환 메서드
-    public String getLoginId(String token) {
-        Claims claims = parseClaims(token);
-        String loginId = claims.get("sub", String.class);
-        return loginId;
+    public String createAccessToken(String email, MemberRole role) {
+        return generateToken(email, role.name(), accessTokenValidity);
     }
 
-    // role 반환 메서드
-    public String getRole(String token) {
-        Claims claims = parseClaims(token);
-        return claims.get("role", String.class);
+    public String createRefreshToken(String email) {
+        return generateToken(email, null, refreshTokenValidity);
     }
 
-    // 토큰이 소멸(유효기간 만료)하였는지 검증 메서드
-    public Boolean isExpired(String token) {
-        Claims claims = parseClaims(token);
-        return claims.getExpiration().before(new Date());
-    }
+    private String generateToken(String email, String role, long validity) {
+        Claims claims = Jwts.claims().setSubject(email);
+        if (role != null) {
+            claims.put("role", role);
+        }
 
-    public Member getUserFromToken(String token) {
-        String email = getLoginId(token);
-        return memberRepository.findByLoginId(email)
-                .orElseThrow(() -> new IllegalArgumentException("로그인 ID가 '" + email + "'인 사용자를 찾을 수 없습니다."));
-    }
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + validity);
 
-    // 토큰 생성 메서드
-    public String createJwt(String loginId, String role, Long expiredMs) {
-        String jwt = Jwts.builder()
-                .setSubject(loginId)
-                .claim("role", role)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expiredMs))
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
-        return jwt;
     }
 
-
-    // 토큰 파싱 메서드
-    private Claims parseClaims(String token) {
+    public boolean isExpired(String token) {
         try {
-            return Jwts.parserBuilder()
+            Date expiration = Jwts.parserBuilder()
                     .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token)
-                    .getBody();
+                    .getBody()
+                    .getExpiration();
+
+            return expiration.before(new Date());
         } catch (ExpiredJwtException e) {
-            throw new IllegalArgumentException("토큰이 만료되었습니다.", e);
-        } catch (MalformedJwtException e) {
-            throw new IllegalArgumentException("잘못된 토큰 형식입니다.", e);
+            return true; // 만료
         } catch (JwtException e) {
-            throw new IllegalArgumentException("토큰 처리 중 오류가 발생했습니다.", e);
+            return false; // 기타 오류로 인해 유효하지 않음
         }
     }
 
+    public String getEmailFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    public String getRoleFromToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return claims.get("role", String.class);
+    }
 }
