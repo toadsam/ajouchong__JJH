@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping(value = "/api/login/auth", produces = "application/json")
 @RequiredArgsConstructor
@@ -20,8 +22,13 @@ public class OAuthController {
     private final MemberRepository memberRepository;
 
     @PostMapping("/oauth")
-    public ApiResponse<OAuthResponseDto> googleLogin(@RequestBody OAuthRequestDto request) {
-        GoogleUserDto googleUser = googleOAuthService.getUserInfo(request.getAccessToken());
+    public ApiResponse<OAuthResponseDto> googleLogin(@RequestBody Map<String, String> requestBody) {
+        String accessToken = requestBody.get("accessToken");
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new IllegalArgumentException("AccessToken is missing.");
+        }
+
+        GoogleUserDto googleUser = googleOAuthService.getUserInfo(accessToken);
 
         Member member = memberRepository.findByEmail(googleUser.getEmail())
                 .orElseGet(() -> {
@@ -33,7 +40,7 @@ public class OAuthController {
         String jwtToken = jwtTokenProvider.createAccessToken(member.getEmail(), member.getRole());
         OAuthResponseDto responseDto = new OAuthResponseDto(jwtToken, member);
 
-        log.debug("responeDto: {}", responseDto);
+        log.debug("responseDto: {}", responseDto);
 
         return new ApiResponse<>(1, "Google login 성공", responseDto);
     }
