@@ -1,112 +1,151 @@
 package com.ajouchong.jwt;
 
-import com.ajouchong.entity.enumClass.MemberRole;
+import com.ajouchong.entity.Member;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Base64;
 import java.util.Date;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtTokenProvider {
 
-    private final SecretKey secretKey;
-    private final long accessTokenValidity = 1000L * 60 * 60 * 24; // 1일
-    private final long refreshTokenValidity = 1000L * 60 * 60 * 24 * 7; // 7일
-    private static final String COOKIE_NAME = "jwt_token"; // JWT를 저장할 쿠키 이름
+    private static SecretKey secretKey = null;
+    private static final long accessTokenValidity = 1000L * 60 * 60 * 24; // 1일
 
     public JwtTokenProvider(@Value("${jwt.secret}") String secret) {
-        this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
+        byte[] keyBytes = Base64.getDecoder().decode(secret);
+        if (keyBytes.length < 32) { // 최소 길이 검증
+            throw new IllegalArgumentException("JWT Secret key는 최소 32 bytes이어야 합니다.");
+        }
+        secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createAccessToken(String email, MemberRole role) {
-        return generateToken(email, role.name(), accessTokenValidity);
-    }
-
-    public String createRefreshToken(String email) {
-        return generateToken(email, null, refreshTokenValidity);
-    }
-
-    private String generateToken(String email, String role, long validity) {
-        Claims claims = Jwts.claims().setSubject(email);
-        Optional.ofNullable(role).ifPresent(r -> claims.put("role", r));
-
+    public static String createAccessToken(Member member) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + validity);
+        Date expiryDate = new Date(now.getTime() + accessTokenValidity);
 
         return Jwts.builder()
-                .setClaims(claims)
-                .setIssuedAt(now)
+                .setSubject("accessToken")
+                .setClaims(createAccessTokenClaims(member))
                 .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
+    private static Map<String, Object> createAccessTokenClaims (Member member) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("email", member.getEmail());
+        map.put("name", member.getName());
+        map.put("role", member.getRole());
+        return map;
+    }
+
+    public String createRefreshToken(Member member) {
+        Date now = new Date();
+
+        long refreshTokenValidity = 1000L * 60 * 60 * 24 * 7;
+        Date expiryDate = new Date(now.getTime() + refreshTokenValidity);
+
+        return Jwts.builder()
+                .setSubject("refreshToken")
+                .setClaims(createRefreshTokenClaims(member))
+                .setExpiration(expiryDate)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    private static Map<String, Object> createRefreshTokenClaims (Member member) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("email", member.getEmail());
+        return map;
+    }
+
     public boolean isExpired(String token) {
         try {
-            return getClaimsFromToken(token).getExpiration().before(new Date());
+            Date expiration = getClaimsFromToken(token).getExpiration();
+            return expiration.before(new Date());
         } catch (ExpiredJwtException e) {
-            return true; // 만료
+            return true; // 만료된 경우 true 반환
         } catch (JwtException e) {
-            throw new InvalidJwtException("유효하지 않은 JWT 토큰입니다.");
+            return true; // 유효하지 않은 토큰도 만료된 것으로 처리
         }
     }
 
     public String getEmailFromToken(String token) {
-        return getClaimsFromToken(token).getSubject();
+        return getClaimsFromToken(token).get("email", String.class);
     }
 
     public String getRoleFromToken(String token) {
         return getClaimsFromToken(token).get("role", String.class);
     }
 
+    public String getNameFromToken(String token) {
+        return getClaimsFromToken(token).get("name", String.class);
+    }
+
     private Claims getClaimsFromToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            throw new InvalidJwtException("토큰이 만료되었습니다.");
+        } catch (JwtException e) {
+            throw new InvalidJwtException("유효하지 않은 JWT 토큰입니다.");
+        }
     }
 
-    /** ✅ JWT를 쿠키에 저장하는 메서드 추가 */
-    public void setJwtCookie(HttpServletResponse response, String token) {
-        ResponseCookie cookie = ResponseCookie.from(COOKIE_NAME, token)
-                .httpOnly(true)  // XSS 공격 방지
-                .secure(true)    // HTTPS에서만 전송
-                .path("/")       // 모든 경로에서 사용 가능
-                .maxAge(accessTokenValidity / 1000) // 초 단위로 설정
-                .sameSite("Strict") // CSRF 방지
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
+    public void setJwtCookie(HttpServletResponse response, String accessToken, String refreshToken) {
+        Cookie accessCookie = new Cookie("accessToken", accessToken);
+        accessCookie.setHttpOnly(true);
+        accessCookie.setSecure(true); // HTTPS 환경에서만 전송
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(60 * 120); // 120분 후 만료
+        response.addCookie(accessCookie);
+
+        if (refreshToken != null) {
+            Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(true);
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(60 * 60 * 24 * 7); // 7일 후 만료
+            response.addCookie(refreshCookie);
+        }
     }
 
-    public String getJwtFromCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (JwtException e) {
+            return false; // 유효하지 않은 토큰
+        }
+    }
+
+    public String getRefreshTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return null;
+        }
         for (Cookie cookie : request.getCookies()) {
-            if (COOKIE_NAME.equals(cookie.getName())) {
+            if ("refreshToken".equals(cookie.getName())) {
                 return cookie.getValue();
             }
         }
         return null;
-    }
-
-    public void clearJwtCookie(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from(COOKIE_NAME, "")
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(0) // 즉시 만료
-                .sameSite("Strict")
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
     }
 
     public static class InvalidJwtException extends RuntimeException {
