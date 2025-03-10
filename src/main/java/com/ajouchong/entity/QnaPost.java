@@ -1,6 +1,7 @@
 package com.ajouchong.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -16,8 +17,13 @@ public class QnaPost {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long qPostId;
 
+    @NotNull
+    private String qpAuthor;
+
+    @NotNull
     private String qpTitle;
 
+    @NotNull
     @Column(columnDefinition = "TEXT")
     private String qpContent;
 

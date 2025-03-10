@@ -6,10 +6,12 @@ import com.ajouchong.dto.response.AnswerResponseDto;
 import com.ajouchong.dto.response.QnaPostResponseDto;
 import com.ajouchong.entity.Answer;
 import com.ajouchong.entity.QnaPost;
-import com.ajouchong.repository.AnswerRepository;
 import com.ajouchong.repository.QnaPostRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,14 +21,15 @@ import java.util.stream.Collectors;
 public class QnaPostService {
     private final QnaPostRepository qnaPostRepository;
 
-    public QnaPostService(QnaPostRepository qnaPostRepository, AnswerRepository answerRepository) {
+    public QnaPostService(QnaPostRepository qnaPostRepository) {
         this.qnaPostRepository = qnaPostRepository;
     }
 
     @Transactional
-    public QnaPostResponseDto createPost(QnaPostRequestDto requestDto) {
+    public QnaPostResponseDto createPost(QnaPostRequestDto requestDto, String author) {
         QnaPost post = new QnaPost();
 
+        post.setQpAuthor(author);
         post.setQpTitle(requestDto.getQpTitle());
         post.setQpContent(requestDto.getQpContent());
 
@@ -111,5 +114,13 @@ public class QnaPostService {
         } else {
             throw new IllegalArgumentException("해당 게시글에 답변이 없습니다.");
         }
+    }
+
+    private String extractTokenFromHeader(HttpServletRequest request) {
+        String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7); // "Bearer " 이후의 토큰만 반환
+        }
+        return null;
     }
 }

@@ -3,23 +3,39 @@ package com.ajouchong.controller.user;
 import com.ajouchong.common.ApiResponse;
 import com.ajouchong.dto.request.QnaPostRequestDto;
 import com.ajouchong.dto.response.QnaPostResponseDto;
+import com.ajouchong.jwt.JwtTokenProvider;
 import com.ajouchong.service.QnaPostService;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("api/qna")
 public class QnaPostUserController {
     private final QnaPostService qnaPostService;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public QnaPostUserController(QnaPostService qnaPostService) {
+    public QnaPostUserController(QnaPostService qnaPostService, JwtTokenProvider jwtTokenProvider) {
         this.qnaPostService = qnaPostService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @PostMapping
-    public ApiResponse<QnaPostResponseDto> createPost(@RequestBody QnaPostRequestDto requestDto) {
-        QnaPostResponseDto responseDto = qnaPostService.createPost(requestDto);
+    public ApiResponse<QnaPostResponseDto> createPost(@RequestBody QnaPostRequestDto requestDto, HttpServletRequest request) {
+        String token = extractTokenFromHeader(request);
+
+        if (token == null || !jwtTokenProvider.validateToken(token)) {
+            return new ApiResponse<>(0, "token이 존재하지 않거나 유효하지 않습니다.", null);
+        }
+
+        String author = jwtTokenProvider.getNameFromToken(token);
+
+        QnaPostResponseDto responseDto = qnaPostService.createPost(requestDto, author);
         return new ApiResponse<>(1, "게시글이 게시되었습니다.", responseDto);
     }
 
@@ -35,10 +51,25 @@ public class QnaPostUserController {
         return new ApiResponse<>(1, postId +"번 게시글 반환에 성공했습니다.", responseDto);
     }
 
-
     @PostMapping("/{postId}/like")
-    public ApiResponse<Void> incrementLikeCount(@PathVariable Long postId) {
+    public ApiResponse<QnaPostResponseDto> incrementLikeCount(@PathVariable Long postId, HttpServletRequest request) {
+
+        String token = extractTokenFromHeader(request);
+        log.info(token);
+        if (token == null || !jwtTokenProvider.validateToken(token)) {
+            return new ApiResponse<>(0, "token이 존재하지 않거나 유효하지 않습니다.", null);
+        }
+
         qnaPostService.incrementUserLikeCount(postId);
-        return new ApiResponse<>(1, postId + "번 게시글 좋아요 성공", null);
+        QnaPostResponseDto responseDto = qnaPostService.getPostById(postId);
+        return new ApiResponse<>(1, postId + "번 게시글 좋아요 성공", responseDto);
+    }
+
+    private String extractTokenFromHeader(HttpServletRequest request) {
+        String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7); // "Bearer " 이후의 토큰만 반환
+        }
+        return null;
     }
 }
