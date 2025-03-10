@@ -6,6 +6,7 @@ import com.ajouchong.entity.Member;
 import com.ajouchong.entity.enumClass.MemberRole;
 import com.ajouchong.jwt.JwtTokenProvider;
 import com.ajouchong.repository.MemberRepository;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -121,4 +122,25 @@ public class OAuthController {
         log.info("성공");
         return new ApiResponse<>(1, "회원 정보 조회 성공", responseDto);
     }
+
+    @PostMapping("logout")
+    public ApiResponse<Void> logout(HttpServletResponse response) {
+        Cookie refreshToken = new Cookie("refreshToken", null);
+        refreshToken.setHttpOnly(true);
+        refreshToken.setSecure(true);
+        refreshToken.setPath("/");
+        refreshToken.setMaxAge(0); // 쿠키 즉시 만료
+
+        Cookie accessToken = new Cookie("accessToken", null);
+        accessToken.setHttpOnly(true);
+        accessToken.setSecure(true);
+        accessToken.setPath("/");
+        accessToken.setMaxAge(0); // 쿠키 즉시 만료
+
+        response.addCookie(refreshToken);
+        response.addCookie(accessToken);
+
+        return new ApiResponse<>(1, "로그아웃 되었습니다.", null);
+    }
+
 }
