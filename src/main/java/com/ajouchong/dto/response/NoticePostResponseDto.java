@@ -18,8 +18,9 @@ public class NoticePostResponseDto {
     private LocalDateTime npCreateTime;
     private LocalDateTime npUpdateTime;
     private List<String> imageUrls;     // 이미지 파일 URL
+    private boolean likedByCurrentUser;
 
-    public NoticePostResponseDto(NoticePost noticePost) {
+    public NoticePostResponseDto(NoticePost noticePost, boolean likedByCurrentUser) {
         this.nPost_id = noticePost.getNPostId();
         this.npTitle = noticePost.getNpTitle();
         this.npContent = noticePost.getNpContent();
@@ -28,6 +29,7 @@ public class NoticePostResponseDto {
         this.npCreateTime = noticePost.getNpCreateTime();
         this.npUpdateTime = noticePost.getNpUpdateTime();
         this.imageUrls = new ArrayList<>(noticePost.getImageUrls());
+        this.likedByCurrentUser = likedByCurrentUser; // 사용자 좋아요 여부 설정
     }
 }
 
