@@ -1,6 +1,7 @@
 package com.ajouchong.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,7 +14,13 @@ public class Agora {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long aPostId;
 
+    @NotNull
+    private String author;
+
+    @NotNull
     private String apTitle;
+
+    @NotNull
     private String apContent;
 
     private boolean approve = false;

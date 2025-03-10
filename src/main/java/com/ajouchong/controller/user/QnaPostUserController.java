@@ -6,12 +6,14 @@ import com.ajouchong.dto.response.QnaPostResponseDto;
 import com.ajouchong.jwt.JwtTokenProvider;
 import com.ajouchong.service.QnaPostService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("api/qna")
 public class QnaPostUserController {
@@ -50,15 +52,17 @@ public class QnaPostUserController {
     }
 
     @PostMapping("/{postId}/like")
-    public ApiResponse<Void> incrementLikeCount(@PathVariable Long postId, HttpServletRequest request) {
-        String token = extractTokenFromHeader(request);
+    public ApiResponse<QnaPostResponseDto> incrementLikeCount(@PathVariable Long postId, HttpServletRequest request) {
 
+        String token = extractTokenFromHeader(request);
+        log.info(token);
         if (token == null || !jwtTokenProvider.validateToken(token)) {
             return new ApiResponse<>(0, "token이 존재하지 않거나 유효하지 않습니다.", null);
         }
 
         qnaPostService.incrementUserLikeCount(postId);
-        return new ApiResponse<>(1, postId + "번 게시글 좋아요 성공", null);
+        QnaPostResponseDto responseDto = qnaPostService.getPostById(postId);
+        return new ApiResponse<>(1, postId + "번 게시글 좋아요 성공", responseDto);
     }
 
     private String extractTokenFromHeader(HttpServletRequest request) {

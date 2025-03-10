@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Getter @Setter
 public class QnaPostResponseDto {
     private Long qPostId;
+    private String qpAuthor;
     private String qpTitle;
     private String qpContent;
     private boolean isReplied = false;
@@ -20,6 +21,7 @@ public class QnaPostResponseDto {
 
     public QnaPostResponseDto(QnaPost post) {
         this.qPostId = post.getQPostId();
+        this.qpAuthor = post.getQpAuthor();
         this.qpTitle = post.getQpTitle();
         this.qpContent = post.getQpContent();
         this.isReplied = post.isReplied();
