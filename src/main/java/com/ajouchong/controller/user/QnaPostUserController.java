@@ -26,11 +26,14 @@ public class QnaPostUserController {
     }
 
     @PostMapping
-    public ApiResponse<QnaPostResponseDto> createPost(@RequestBody QnaPostRequestDto requestDto, HttpServletRequest request) {
-        String token = extractTokenFromHeader(request);
+    public ApiResponse<QnaPostResponseDto> createPost(@RequestBody QnaPostRequestDto requestDto,
+                                                      @CookieValue(value = "accessToken", required = false) String token) {
+        if (token == null) {
+            return new ApiResponse<>(0, "로그인이 필요합니다.", null);
+        }
 
-        if (token == null || !jwtTokenProvider.validateToken(token)) {
-            return new ApiResponse<>(0, "token이 존재하지 않거나 유효하지 않습니다.", null);
+        if (!jwtTokenProvider.validateToken(token)) {
+            return new ApiResponse<>(0, "유효하지 않은 JWT 토큰입니다.", null);
         }
 
         String author = jwtTokenProvider.getNameFromToken(token);
@@ -67,9 +70,13 @@ public class QnaPostUserController {
 
     private String extractTokenFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+        log.info("Authorization Header: {}", bearerToken);
+
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // "Bearer " 이후의 토큰만 반환
+            return bearerToken.substring(7);
         }
+
+        log.warn("토큰이 존재하지 않거나 형식이 올바르지 않습니다.");
         return null;
     }
 }
