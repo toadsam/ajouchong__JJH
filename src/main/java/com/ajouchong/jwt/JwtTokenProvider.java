@@ -6,6 +6,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class JwtTokenProvider {
 
@@ -131,9 +133,18 @@ public class JwtTokenProvider {
                     .build()
                     .parseClaimsJws(token);
             return true;
+        } catch (ExpiredJwtException e) {
+            log.error("JWT 토큰이 만료되었습니다: {}", e.getMessage());
+        } catch (UnsupportedJwtException e) {
+            log.error("지원되지 않는 JWT 토큰입니다: {}", e.getMessage());
+        } catch (MalformedJwtException e) {
+            log.error("잘못된 JWT 서명입니다: {}", e.getMessage());
+        } catch (SignatureException e) {
+            log.error("JWT 서명 검증 실패: {}", e.getMessage());
         } catch (JwtException e) {
-            return false; // 유효하지 않은 토큰
+            log.error("유효하지 않은 JWT 토큰입니다: {}", e.getMessage());
         }
+        return false;
     }
 
     public String getRefreshTokenFromCookie(HttpServletRequest request) {
