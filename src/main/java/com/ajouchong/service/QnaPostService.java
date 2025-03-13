@@ -5,24 +5,34 @@ import com.ajouchong.dto.request.QnaPostRequestDto;
 import com.ajouchong.dto.response.AnswerResponseDto;
 import com.ajouchong.dto.response.QnaPostResponseDto;
 import com.ajouchong.entity.Answer;
+import com.ajouchong.entity.Member;
+import com.ajouchong.entity.QnaLike;
 import com.ajouchong.entity.QnaPost;
+import com.ajouchong.jwt.JwtTokenProvider;
+import com.ajouchong.repository.MemberRepository;
+import com.ajouchong.repository.QnaLikeRepository;
 import com.ajouchong.repository.QnaPostRepository;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpHeaders;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class QnaPostService {
     private final QnaPostRepository qnaPostRepository;
+    private final QnaLikeRepository qnaLikeRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final MemberRepository memberRepository;
 
-    public QnaPostService(QnaPostRepository qnaPostRepository) {
+    public QnaPostService(QnaPostRepository qnaPostRepository, QnaLikeRepository qnaLikeRepository, JwtTokenProvider jwtTokenProvider, MemberRepository memberRepository) {
         this.qnaPostRepository = qnaPostRepository;
+        this.qnaLikeRepository = qnaLikeRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.memberRepository = memberRepository;
     }
 
     @Transactional
@@ -38,33 +48,74 @@ public class QnaPostService {
         post.setQpUpdateTime(LocalDateTime.now());
         post.setQpCreateTime(LocalDateTime.now());
 
-        qnaPostRepository.save(post);
+        QnaPost savedPost = qnaPostRepository.save(post);
 
-        return new QnaPostResponseDto(post);
+        return convertToQnaResponseDto(savedPost);
     }
 
 
     @Transactional
-    public QnaPostResponseDto getPostById(Long id) {
+    public QnaPostResponseDto getPostById(Long id, String token) {
         QnaPost qnaPost = qnaPostRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(id + "번 게시글을 찾을 수 없습니다."));
-        qnaPost.incrementHitCount();
-        return new QnaPostResponseDto(qnaPost);
+
+        qnaPost.setQpHitCnt(qnaPost.getQpHitCnt() + 1);
+        qnaPostRepository.save(qnaPost);
+
+        boolean likedByCurrentUser = false;
+        if (token != null){ // 사용자 좋아요 여부 확인
+            String email = jwtTokenProvider.getEmailFromToken(token);
+            likedByCurrentUser = isUserLikedPost(id, email);
+        }
+
+        return new QnaPostResponseDto(qnaPost, likedByCurrentUser);
     }
 
     public List<QnaPostResponseDto> getAllPosts() {
-        return qnaPostRepository.findAll().stream()
-                .map(QnaPostResponseDto::new)
+        List<QnaPost> qnaPosts = qnaPostRepository.findAll(Sort.by(Sort.Direction.DESC, "qpCreateTime"));
+
+        return qnaPosts.stream()
+                .map(this::convertToQnaResponseDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public void incrementUserLikeCount(Long postId) {
-        QnaPost post = qnaPostRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException(postId + "번 게시글을 찾을 수 없습니다."));
+    public boolean toggleLike(Long postId, String token) {
+        String email = jwtTokenProvider.getEmailFromToken(token);
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        post.incrementUserLikeCount();
-        qnaPostRepository.save(post);
+        Optional<QnaLike> existingLike = qnaLikeRepository.findByMemberAndQnaPostId(member, postId);
+        boolean isLike = false;
+
+        if (existingLike.isPresent()) {
+            qnaLikeRepository.delete(existingLike.get());
+        } else {
+            QnaLike qnaLike = new QnaLike();
+            qnaLike.setMember(member);
+            qnaLike.setQnaPostId(postId);
+            qnaLikeRepository.save(qnaLike);
+            isLike = true;
+        }
+
+        // 좋아요 개수 업데이트
+        long likeCount = qnaLikeRepository.countByQnaPostId(postId);
+        QnaPost qnaPost = qnaPostRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException(postId + "번 게시글을 찾을 수 없습니다."));
+        qnaPost.setQpUserLikeCnt((int) likeCount);
+        qnaPostRepository.save(qnaPost);
+
+        return isLike;
+    }
+
+    @Transactional
+    public boolean isUserLikedPost(Long postId, String userEmail) {
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        Optional<QnaLike> existingLike = qnaLikeRepository.findByMemberAndQnaPostId(member, postId);
+
+        return existingLike.isPresent();
     }
 
     @Transactional
@@ -110,17 +161,21 @@ public class QnaPostService {
             post.setAnswer(null);
             post.setReplied(false);
             QnaPost updatedPost = qnaPostRepository.save(post);
-            return new QnaPostResponseDto(updatedPost);
+            return new QnaPostResponseDto(updatedPost, false);
         } else {
             throw new IllegalArgumentException("해당 게시글에 답변이 없습니다.");
         }
     }
 
-    private String extractTokenFromHeader(HttpServletRequest request) {
-        String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // "Bearer " 이후의 토큰만 반환
-        }
-        return null;
+    public QnaPostResponseDto convertToQnaResponseDto(QnaPost qnaPost){
+        return new QnaPostResponseDto(qnaPost, false);
     }
+
+//    private String extractTokenFromHeader(HttpServletRequest request) {
+//        String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+//        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+//            return bearerToken.substring(7); // "Bearer " 이후의 토큰만 반환
+//        }
+//        return null;
+//    }
 }
