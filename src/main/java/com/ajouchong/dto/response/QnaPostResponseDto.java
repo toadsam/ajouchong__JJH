@@ -18,8 +18,9 @@ public class QnaPostResponseDto {
     private LocalDateTime qpCreateTime;
     private LocalDateTime qpUpdateTime;
     private AnswerResponseDto answer;
+    private boolean likedByCurrentMember;
 
-    public QnaPostResponseDto(QnaPost post) {
+    public QnaPostResponseDto(QnaPost post, boolean likedByCurrentMember) {
         this.qPostId = post.getQPostId();
         this.qpAuthor = post.getQpAuthor();
         this.qpTitle = post.getQpTitle();
@@ -29,6 +30,7 @@ public class QnaPostResponseDto {
         this.qpHitCnt = post.getQpHitCnt();
         this.qpCreateTime = post.getQpCreateTime();
         this.qpUpdateTime = post.getQpUpdateTime();
+        this.likedByCurrentMember = likedByCurrentMember;
 
         if (post.getAnswer() != null) {
             this.answer = new AnswerResponseDto(post.getAnswer());
