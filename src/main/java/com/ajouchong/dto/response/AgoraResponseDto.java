@@ -12,6 +12,7 @@ public class AgoraResponseDto {
     private Long aPostId;
     private String apTitle;
     private String apContent;
+    private String author;
     private boolean isApprove = false;
     private int apUserLikeCount;
     private int apHitCount;
@@ -32,6 +33,7 @@ public class AgoraResponseDto {
     public AgoraResponseDto(Agora post, boolean likedByCurrentMember) {
         this.aPostId = post.getAPostId();
         this.apTitle = post.getApTitle();
+        this.author = post.getAuthor();
         this.apContent = post.getApContent();
         this.isApprove = post.isApprove();
         this.apUserLikeCount = post.getApUserLikeCount();

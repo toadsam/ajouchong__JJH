@@ -3,48 +3,84 @@ package com.ajouchong.service;
 import com.ajouchong.dto.request.AgoraRequestDto;
 import com.ajouchong.dto.response.AgoraResponseDto;
 import com.ajouchong.entity.Agora;
+import com.ajouchong.entity.AgoraLike;
+import com.ajouchong.entity.Member;
+import com.ajouchong.jwt.JwtTokenProvider;
+import com.ajouchong.repository.AgoraLikeRepository;
 import com.ajouchong.repository.AgoraRepository;
+import com.ajouchong.repository.MemberRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class AgoraService {
     private final AgoraRepository agoraRepository;
+    private final AgoraLikeRepository agoraLikeRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final MemberRepository memberRepository;
 
-    public AgoraService(AgoraRepository agoraRepository) {
+    public AgoraService(AgoraRepository agoraRepository, AgoraLikeRepository agoraLikeRepository, JwtTokenProvider jwtTokenProvider, MemberRepository memberRepository) {
         this.agoraRepository = agoraRepository;
+        this.agoraLikeRepository = agoraLikeRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.memberRepository = memberRepository;
     }
 
     @Transactional
-    public AgoraResponseDto createPost(AgoraRequestDto requestDto) {
+    public AgoraResponseDto createAgoraPost(AgoraRequestDto requestDto, String author) {
         Agora agora = new Agora();
 
+        agora.setAuthor(author);
         agora.setApTitle(requestDto.getApTitle());
         agora.setApContent(requestDto.getApContent());
 
         agora.setApUserLikeCount(0);
         agora.setApHitCount(0);
 
-        agoraRepository.save(agora);
+        Agora savedPost = agoraRepository.save(agora);
 
-        return new AgoraResponseDto(agora);
+        return convertToAgoraResponseDto(savedPost);
     }
 
     @Transactional(readOnly = true)
-    public Agora getPostById(Long postId) {
-        return agoraRepository.findById(postId)
+    public AgoraResponseDto getAgoraById(Long postId, String token) {
+        Agora agora = agoraRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException(postId + "번 게시글을 찾을 수 없습니다."));
+
+        agora.setApHitCount(agora.getApHitCount() + 1);
+        agoraRepository.save(agora);
+
+        boolean likedByCurrentUser = false;
+        if (token != null){ // 사용자 좋아요 여부 확인
+            String email = jwtTokenProvider.getEmailFromToken(token);
+            likedByCurrentUser = isUserLikedAgora(postId, email);
+        }
+
+        return new AgoraResponseDto(agora, likedByCurrentUser);
+    }
+
+    @Transactional
+    public boolean isUserLikedAgora(Long postId, String userEmail) {
+        Member member = memberRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        Optional<AgoraLike> existingLike = agoraLikeRepository.findByMemberAndAgoraId(member, postId);
+
+        return existingLike.isPresent();
     }
 
     @Transactional(readOnly = true)
     public List<AgoraResponseDto> getAllPosts() {
         List<Agora> agoras = agoraRepository.findAll(Sort.by(Sort.Direction.DESC, "createTime"));
 
-        return agoras.stream().map(this::convertToResponseDto)
+        return agoras.stream().map(this::convertToAgoraResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -58,31 +94,61 @@ public class AgoraService {
     }
 
     @Transactional
-    public void approvePost(Long postId) {
-        Agora agora = getPostById(postId);
+    public void approvePost(Long postId, String token) {
+        if (token == null || !jwtTokenProvider.validateToken(token)) {
+            throw new IllegalArgumentException("유효한 토큰이 필요합니다.");
+        }
+
+        String email = jwtTokenProvider.getEmailFromToken(token);
+        memberRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        Agora agora = agoraRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException(postId + "번 게시글을 찾을 수 없습니다."));
+
+        log.info(agora.getAuthor());
+        log.info(agora.getApTitle());
         agora.approvePost();
+
+        // 필수 필드가 null이 아닌지 확인
+        if (agora.getAuthor() == null || agora.getApTitle() == null) {
+            throw new RuntimeException("필수 데이터가 누락되었습니다.");
+        }
+
         agoraRepository.save(agora);
     }
+
 
     @Transactional
-    public void incrementHitCount(Long postId) {
-        Agora agora = agoraRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException(postId + "번 게시글을 찾을 수 없습니다."));
+    public boolean toggleAgoraLike(Long postId, String token) {
+        String email = jwtTokenProvider.getEmailFromToken(token);
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        agora.incrementHitCount();
+        Optional<AgoraLike> exLike = agoraLikeRepository.findByMemberAndAgoraId(member, postId);
+        boolean isLike = false;
+
+        if (exLike.isPresent()) {
+            agoraLikeRepository.delete(exLike.get());
+        } else {
+            AgoraLike agoraLike = new AgoraLike();
+            agoraLike.setMember(member);
+            agoraLike.setAgoraId(postId);
+            agoraLikeRepository.save(agoraLike);
+            isLike = true;
+        }
+
+        // 좋아요 개수 업데이트
+        long likeCount = agoraLikeRepository.countByAgoraId(postId);
+        Agora agora = agoraRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException(postId + "번 게시글을 찾을 수 없습니다."));
+        agora.setApUserLikeCount((int) likeCount);
         agoraRepository.save(agora);
+
+        return isLike;
     }
 
-    @Transactional
-    public void incrementUserLikeCount(Long postId) {
-        Agora agora = agoraRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException(postId + "번 게시글을 찾을 수 없습니다."));
-
-        agora.incrementUserLikeCount();
-        agoraRepository.save(agora);
-    }
-
-    public AgoraResponseDto convertToResponseDto(Agora agora) {
-        return new AgoraResponseDto(agora);
+    public AgoraResponseDto convertToAgoraResponseDto(Agora agora) {
+        return new AgoraResponseDto(agora, false);
     }
 }

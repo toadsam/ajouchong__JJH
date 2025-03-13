@@ -3,25 +3,40 @@ package com.ajouchong.controller.user;
 import com.ajouchong.common.ApiResponse;
 import com.ajouchong.dto.request.AgoraRequestDto;
 import com.ajouchong.dto.response.AgoraResponseDto;
-import com.ajouchong.entity.Agora;
+import com.ajouchong.jwt.JwtTokenProvider;
 import com.ajouchong.service.AgoraService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/agora")
 public class AgoraUserController {
     private final AgoraService agoraService;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public AgoraUserController(AgoraService agoraService) {
+    public AgoraUserController(AgoraService agoraService, JwtTokenProvider jwtTokenProvider) {
         this.agoraService = agoraService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @PostMapping
-    public ApiResponse<AgoraResponseDto> createPost(@RequestBody AgoraRequestDto requestDto) {
-        AgoraResponseDto responseDto = agoraService.createPost(requestDto);
+    public ApiResponse<AgoraResponseDto> createPost(@RequestBody AgoraRequestDto requestDto,
+                                                    @CookieValue(value = "accessToken", required = false) String token) {
+
+        if (token == null) {
+            return new ApiResponse<>(0, "로그인이 필요합니다.", null);
+        }
+
+        if (!jwtTokenProvider.validateToken(token)) {
+            return new ApiResponse<>(0, "유효하지 않은 JWT 토큰입니다.", null);
+        }
+
+        String author = jwtTokenProvider.getNameFromToken(token);
+
+        AgoraResponseDto responseDto = agoraService.createAgoraPost(requestDto, author);
         return new ApiResponse<>(1, "게시글이 게시되었습니다.", responseDto);
     }
 
@@ -32,19 +47,27 @@ public class AgoraUserController {
     }
 
     @GetMapping("{postId}")
-    public ApiResponse<Optional<Agora>> getPostById(@PathVariable Long postId) {
-        Optional<Agora> agora = Optional.ofNullable(agoraService.getPostById(postId));
-        if (agora.isPresent()) {
-            agoraService.incrementHitCount(postId);
-            return new ApiResponse<>(1, postId + "번 게시글 조회 성공", agora);
-        } else {
-            return new ApiResponse<>(0, "게시글을 찾을 수 없습니다.", null);
-        }
+    public ApiResponse<AgoraResponseDto> getPostById(@PathVariable Long postId,
+                                                    @CookieValue(value = "accessToken", required = false) String token) {
+        AgoraResponseDto agora = agoraService.getAgoraById(postId, token);
+        return new ApiResponse<>(1, postId + "번 게시글 반환에 성공했습니다.", agora);
     }
 
     @PostMapping("/{postId}/like")
-    public ApiResponse<Void> incrementLikeCount(@PathVariable Long postId) {
-        agoraService.incrementUserLikeCount(postId);
-        return new ApiResponse<>(1, postId + "번 게시글 좋아요 성공", null);
+    public ApiResponse<Boolean> incrementLikeCount(@PathVariable Long postId,
+                                                @CookieValue(value = "accessToken", required = false) String token) {
+        if (token == null) {
+            return new ApiResponse<>(0, "로그인이 필요합니다.", null);
+        }
+
+        log.info(token);
+        if (!jwtTokenProvider.validateToken(token)) {
+            return new ApiResponse<>(0, "유효하지 않은 JWT 토큰입니다.", null);
+        }
+
+        boolean isLike = agoraService.toggleAgoraLike(postId, token);
+        String message = isLike ? "번 게시글 좋아요 성공" : "번 게시글 좋아요 취소 성공";
+
+        return new ApiResponse<>(1, postId + message, isLike);
     }
 }
