@@ -21,6 +21,7 @@ public class Agora {
     private String apTitle;
 
     @NotNull
+    @Column(columnDefinition = "TEXT")
     private String apContent;
 
     private boolean approve = false;

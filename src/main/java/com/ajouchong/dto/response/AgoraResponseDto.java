@@ -18,6 +18,7 @@ public class AgoraResponseDto {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private AnswerDto answer;
+    private boolean likedByCurrentMember;
 
     @Getter
     @Setter
@@ -28,7 +29,7 @@ public class AgoraResponseDto {
         private LocalDateTime updateTime;
     }
 
-    public AgoraResponseDto(Agora post) {
+    public AgoraResponseDto(Agora post, boolean likedByCurrentMember) {
         this.aPostId = post.getAPostId();
         this.apTitle = post.getApTitle();
         this.apContent = post.getApContent();
@@ -37,6 +38,7 @@ public class AgoraResponseDto {
         this.apHitCount = post.getApHitCount();
         this.createTime = post.getCreateTime();
         this.updateTime = post.getUpdateTime();
+        this.likedByCurrentMember = likedByCurrentMember;
 
     }
 }
