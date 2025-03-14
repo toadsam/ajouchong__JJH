@@ -51,7 +51,7 @@ public class AgoraService {
         return convertToAgoraResponseDto(savedPost);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AgoraResponseDto getAgoraById(Long postId, String token) {
         Agora agora = agoraRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException(postId + "번 게시글을 찾을 수 없습니다."));
