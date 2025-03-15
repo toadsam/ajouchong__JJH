@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -80,22 +82,23 @@ public class QnaPostService {
     }
 
     @Transactional
-    public boolean toggleLike(Long postId, String token) {
+    public Map<String, Object> toggleLike(Long postId, String token) {
         String email = jwtTokenProvider.getEmailFromToken(token);
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         Optional<QnaLike> existingLike = qnaLikeRepository.findByMemberAndQnaPostId(member, postId);
-        boolean isLike = false;
+        boolean isLiked;
 
         if (existingLike.isPresent()) {
             qnaLikeRepository.delete(existingLike.get());
+            isLiked = false; // 좋아요 취소됨
         } else {
             QnaLike qnaLike = new QnaLike();
             qnaLike.setMember(member);
             qnaLike.setQnaPostId(postId);
             qnaLikeRepository.save(qnaLike);
-            isLike = true;
+            isLiked = true; // 좋아요 추가됨
         }
 
         // 좋아요 개수 업데이트
@@ -105,8 +108,13 @@ public class QnaPostService {
         qnaPost.setQpUserLikeCnt((int) likeCount);
         qnaPostRepository.save(qnaPost);
 
-        return isLike;
+        // 결과 반환
+        Map<String, Object> result = new HashMap<>();
+        result.put("isLiked", isLiked);
+        result.put("likeCount", likeCount);
+        return result;
     }
+
 
     @Transactional
     public boolean isUserLikedPost(Long postId, String userEmail) {

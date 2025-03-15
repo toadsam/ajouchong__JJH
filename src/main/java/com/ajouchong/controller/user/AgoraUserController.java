@@ -8,7 +8,9 @@ import com.ajouchong.service.AgoraService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -54,7 +56,7 @@ public class AgoraUserController {
     }
 
     @PostMapping("/{postId}/like")
-    public ApiResponse<Boolean> incrementLikeCount(@PathVariable Long postId,
+    public ApiResponse<Map<String, Object>> incrementLikeCount(@PathVariable Long postId,
                                                 @CookieValue(value = "accessToken", required = false) String token) {
         if (token == null) {
             return new ApiResponse<>(0, "로그인이 필요합니다.", null);
@@ -65,9 +67,16 @@ public class AgoraUserController {
             return new ApiResponse<>(0, "유효하지 않은 JWT 토큰입니다.", null);
         }
 
-        boolean isLike = agoraService.toggleAgoraLike(postId, token);
-        String message = isLike ? "번 게시글 좋아요 성공" : "번 게시글 좋아요 취소 성공";
+        Map<String, Object> result = agoraService.toggleAgoraLike(postId, token);
+        boolean isLiked = (boolean) result.get("isLiked");
+        long likeCount = (long) result.get("likeCount");
 
-        return new ApiResponse<>(1, postId + message, isLike);
+        String message = isLiked ? "번 게시글 좋아요 성공" : "번 게시글 좋아요 취소 성공";
+
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("isLiked", isLiked);
+        responseData.put("likeCount", likeCount);
+
+        return new ApiResponse<>(1, postId + message, responseData);
     }
 }

@@ -14,7 +14,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -49,7 +51,7 @@ public class AgoraService {
         return convertToAgoraResponseDto(savedPost);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AgoraResponseDto getAgoraById(Long postId, String token) {
         Agora agora = agoraRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException(postId + "번 게시글을 찾을 수 없습니다."));
@@ -120,22 +122,23 @@ public class AgoraService {
 
 
     @Transactional
-    public boolean toggleAgoraLike(Long postId, String token) {
+    public Map<String, Object> toggleAgoraLike(Long postId, String token) {
         String email = jwtTokenProvider.getEmailFromToken(token);
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         Optional<AgoraLike> exLike = agoraLikeRepository.findByMemberAndAgoraId(member, postId);
-        boolean isLike = false;
+        boolean isLiked;
 
         if (exLike.isPresent()) {
             agoraLikeRepository.delete(exLike.get());
+            isLiked = false;
         } else {
             AgoraLike agoraLike = new AgoraLike();
             agoraLike.setMember(member);
             agoraLike.setAgoraId(postId);
             agoraLikeRepository.save(agoraLike);
-            isLike = true;
+            isLiked = true;
         }
 
         // 좋아요 개수 업데이트
@@ -145,7 +148,10 @@ public class AgoraService {
         agora.setApUserLikeCount((int) likeCount);
         agoraRepository.save(agora);
 
-        return isLike;
+        Map<String, Object> result = new HashMap<>();
+        result.put("isLiked", isLiked);
+        result.put("likeCount", likeCount);
+        return result;
     }
 
     public AgoraResponseDto convertToAgoraResponseDto(Agora agora) {
